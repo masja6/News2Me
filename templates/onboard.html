@@ -551,9 +551,18 @@ async function submitOnboard() {
   // Build summary chips
   const allCats = [...indiaSelected, ...globalSelected];
   const labels = Object.fromEntries([...INDIA,...GLOBAL].map(x => [x.v, `${x.e} ${x.l}`]));
-  document.getElementById('summary-chips').innerHTML =
-    allCats.map(c => `<span class="summary-chip">${labels[c] || c}</span>`).join('') +
-    `<span class="summary-chip">📰 ${maxItems} stories/day</span>`;
+  
+  const MAX_DISPLAY = 6;
+  const displayCats = allCats.slice(0, MAX_DISPLAY);
+  const extraCount = allCats.length - MAX_DISPLAY;
+  
+  let chipsHtml = displayCats.map(c => `<span class="summary-chip">${labels[c] || c}</span>`).join('');
+  if (extraCount > 0) {
+    chipsHtml += `<span class="summary-chip" style="background:#f0f0f0;color:#666;font-weight:700;">+${extraCount} more</span>`;
+  }
+  chipsHtml += `<span class="summary-chip" style="background:var(--blue);color:#fff;">📰 ${maxItems} stories/day</span>`;
+  
+  document.getElementById('summary-chips').innerHTML = chipsHtml;
 
   const name = document.getElementById('name-input').value.trim();
   document.getElementById('done-title').textContent = `You're all set, ${name}!`;
