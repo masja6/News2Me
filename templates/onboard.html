@@ -358,24 +358,40 @@
     <button class="btn-primary" onclick="goTo(5)">Continue →</button>
   </div>
 
-  <!-- Step 5: Count -->
+  <!-- Step 5: Tone -->
   <div class="step" id="step-5">
+    <p class="question">What should your digest sound like?</p>
+    <div class="chips" id="tone-chips"></div>
+    <div class="input-wrap" id="other-tone-wrap" style="display:none; margin-top:10px;">
+      <input type="text" id="other-tone-input" placeholder="e.g. Speak like a Pirate">
+    </div>
+    <button class="btn-primary" onclick="goTo(6)">Continue →</button>
+  </div>
+
+  <!-- Step 6: Count & Jargon -->
+  <div class="step" id="step-6">
     <p class="question">How many stories per morning?</p>
     <div class="slider-section">
       <div class="count-display" id="count-display">10</div>
       <input type="range" id="count-slider" min="5" max="15" value="10">
       <div class="slider-labels"><span>5 stories</span><span>15 stories</span></div>
     </div>
+    
+    <label style="display:flex; align-items:center; gap:10px; margin-bottom:28px; cursor:pointer;">
+      <input type="checkbox" id="jargon-check" checked style="width:20px; height:20px; accent-color:var(--blue);">
+      <span style="font-weight:600;">Enable Smart Jargon Busting</span>
+    </label>
+
     <button class="btn-primary" id="finish-btn" onclick="submitOnboard()">Set up my digest →</button>
   </div>
 
-  <!-- Step 6: Done -->
-  <div class="step" id="step-6">
+  <!-- Step 7: Done -->
+  <div class="step" id="step-7">
     <div class="checkmark-wrap"><span class="checkmark">✓</span></div>
     <h1 id="done-title">You're all set!</h1>
     <p class="sub" id="done-sub">Your Morning Digest arrives at 7 AM IST every day.</p>
     <div class="summary-chips" id="summary-chips"></div>
-    <a href="/admin" class="btn-primary">Go to dashboard →</a>
+    <a href="/" class="btn-primary" onclick="window.location.reload(); return false;">Subscribe another email →</a>
   </div>
 
 </div>
@@ -383,7 +399,7 @@
 <button class="btn-back" id="back-btn" onclick="goBack()">← Back</button>
 
 <script>
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 let current = 0;
 
 const INDIA = [
@@ -406,6 +422,15 @@ const GLOBAL = [
   { v: 'global_policy',   l: 'Policy',       e: '🌐', d: false },
 ];
 
+const TONES = [
+  { v: 'Standard', l: 'Standard', e: '📰', d: true },
+  { v: 'Explain Like I\'m 5', l: 'ELI5', e: '👶', d: false },
+  { v: 'Wall Street Analyst', l: 'Wall Street', e: '👔', d: false },
+  { v: 'Sarcastic', l: 'Sarcastic', e: '😏', d: false },
+  { v: 'Bullet Points', l: 'Bullet Points', e: '📝', d: false },
+  { v: 'Other', l: 'Other...', e: '✨', d: false },
+];
+
 function renderChips(containerId, chips) {
   const el = document.getElementById(containerId);
   el.innerHTML = chips.map(c => `
@@ -414,12 +439,35 @@ function renderChips(containerId, chips) {
     </button>`).join('');
 }
 
+function renderRadioChips(containerId, chips) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = chips.map(c => `
+    <button type="button" class="chip ${c.d ? 'selected' : ''}" data-value="${c.v}" onclick="toggleRadioChip(this, '${containerId}')">
+      ${c.e} ${c.l} <span class="check">✓</span>
+    </button>`).join('');
+}
+
 function toggleChip(el) {
   el.classList.toggle('selected');
 }
 
+function toggleRadioChip(el, containerId) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (containerId === 'tone-chips') {
+    const isOther = el.dataset.value === 'Other';
+    document.getElementById('other-tone-wrap').style.display = isOther ? 'block' : 'none';
+    if (isOther) document.getElementById('other-tone-input').focus();
+  }
+}
+
 function getSelected(containerId) {
   return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(el => el.dataset.value);
+}
+
+function getRadioSelected(containerId) {
+  const sel = document.querySelector(`#${containerId} .chip.selected`);
+  return sel ? sel.dataset.value : null;
 }
 
 function goTo(n) {
@@ -477,6 +525,9 @@ async function submitOnboard() {
   const indiaSelected = getSelected('india-chips');
   const globalSelected = getSelected('global-chips');
   const maxItems = parseInt(document.getElementById('count-slider').value);
+  const toneBase = getRadioSelected('tone-chips');
+  const tone = toneBase === 'Other' ? document.getElementById('other-tone-input').value.trim() : toneBase;
+  const jargon = document.getElementById('jargon-check').checked;
 
   const payload = {
     name: document.getElementById('name-input').value.trim(),
@@ -484,10 +535,12 @@ async function submitOnboard() {
     india_categories: indiaSelected,
     global_categories: globalSelected,
     max_items: maxItems,
+    tone: tone || 'Standard',
+    jargon_busting: jargon,
   };
 
   try {
-    await fetch('/onboard', {
+    await fetch('/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -504,7 +557,7 @@ async function submitOnboard() {
   const name = document.getElementById('name-input').value.trim();
   document.getElementById('done-title').textContent = `You're all set, ${name}!`;
 
-  goTo(6);
+  goTo(7);
 }
 
 // Slider live update
@@ -524,6 +577,7 @@ document.addEventListener('keydown', e => {
 // Init chips
 renderChips('india-chips', INDIA);
 renderChips('global-chips', GLOBAL);
+renderRadioChips('tone-chips', TONES);
 </script>
 </body>
 </html>

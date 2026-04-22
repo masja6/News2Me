@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    container_name: newstome-web
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
+    env_file:
+      - .env
+
+  telegram-bot:
+    build: .
+    container_name: newstome-bot
+    restart: always
+    command: ["python", "run_bot.py"]
+    volumes:
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
+    env_file:
+      - .env

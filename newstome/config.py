@@ -19,6 +19,7 @@ class Secrets(BaseSettings):
     gemini_api_key: str = ""
     gmail_address: str = ""
     gmail_app_password: str = ""
+    mongodb_uri: str = ""
 
     summary_model: str = "claude-haiku-4-5-20251001"
     classify_model: str = "claude-haiku-4-5-20251001"

@@ -111,15 +111,13 @@
 <div class="header">
   <div class="header-left">
     <span class="logo">✦ NewsToMe</span>
-    {% if user %}<span class="user-pill">{{ user.name }}</span>{% endif %}
+    <span class="user-pill">Admin</span>
   </div>
   <div class="header-right">
     <form action="/admin/run" method="post" style="margin:0">
       <button class="btn btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
         {{ '⟳ Running…' if running else '▶ Run digest now' }}
       </button>
-    </form>
-    <a href="/"><button class="btn btn-outline" type="button">⚙ Re-setup</button></a>
   </div>
 </div>
 
@@ -149,6 +147,25 @@
       <span class="feed-trust">{{ f.trust }}</span>
     </div>
     {% endfor %}
+  </div>
+
+  <!-- Subscribers -->
+  <div class="card">
+    <div class="card-title">Subscribers ({{ subscribers|length }})</div>
+    {% if subscribers %}
+      {% for sub in subscribers %}
+      <div class="feed-item">
+        <div class="feed-dot" style="background:var(--blue)"></div>
+        <span class="feed-name">{{ sub.name }}</span>
+        <span class="feed-trust" style="color:var(--text)">{{ sub.email }}</span>
+        <span class="feed-cat">{{ sub.max_items }} items</span>
+        <span class="feed-cat" style="background:#fff3e0;color:#e65100;">{{ sub.tone|default('Standard') }}</span>
+        {% if sub.jargon_busting %}<span class="feed-cat" style="background:#e8f5e9;color:#2e7d32;">Jargon On</span>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="font-size:13px;color:var(--muted)">No subscribers yet.</p>
+    {% endif %}
   </div>
 
   <!-- Ranking params -->

@@ -8,62 +8,37 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import CONFIG_PATH, load_config, save_config, secrets
-from .pipeline import build_digest, load_last_digest
+from .pipeline import build_digest, build_user_digest, load_last_digest, prepare_clusters
 from .telegram import send_digest as tg_send
 from .email_send import send_email
 
 app = FastAPI(title="NewsToMe Admin")
 templates = Jinja2Templates(directory="templates")
+from .db import load_subscribers, save_subscriber
 
-USER_PATH = Path("data/user.json")
+
 _running = False
-
-
-# ── User persistence ──────────────────────────────────────────────────────────
-
-def load_user() -> dict | None:
-    if not USER_PATH.exists():
-        return None
-    return json.loads(USER_PATH.read_text())
-
-
-def save_user(data: dict) -> None:
-    USER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    USER_PATH.write_text(json.dumps(data, indent=2))
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    user = load_user()
-    if user and user.get("setup_complete"):
-        return RedirectResponse("/admin")
     return templates.TemplateResponse(request, "onboard.html")
 
 
-@app.post("/onboard")
-async def onboard(request: Request):
+@app.post("/subscribe")
+async def subscribe(request: Request):
     data = await request.json()
     data["setup_complete"] = True
     data["created_at"] = datetime.now(timezone.utc).isoformat()
-    save_user(data)
-
-    # Persist preferences into config.yaml
-    try:
-        cfg = load_config()
-        cfg.delivery.email_to = data.get("email", "")
-        cfg.ranking.max_items = int(data.get("max_items", 10))
-        save_config(cfg)
-    except Exception as e:
-        print(f"  config update failed: {e}")
-
+    save_subscriber(data)
     return {"status": "ok"}
 
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin(request: Request):
-    user = load_user()
+    subscribers = load_subscribers()
     cfg = load_config()
     last = load_last_digest()
 
@@ -87,7 +62,7 @@ def admin(request: Request):
     ranking_dict = cfg.ranking.model_dump()
 
     return templates.TemplateResponse(request, "admin.html", {
-        "user": user,
+        "subscribers": subscribers,
         "running": _running,
         "feeds": cfg.feeds,
         "ranking": ranking_dict,
@@ -128,14 +103,31 @@ def _do_run() -> None:
     global _running
     try:
         cfg = load_config()
-        summaries, _ = build_digest(verbose=True)
-        if not summaries:
+        ranked = prepare_clusters(verbose=True)
+        if not ranked:
             return
+            
         title = cfg.telegram.digest_title
         if "telegram" in cfg.delivery.channels:
-            tg_send(summaries, title=title)
+            summaries, _ = build_user_digest(ranked, {}, verbose=True)
+            if summaries:
+                tg_send(summaries, title=title)
+                
         if "email" in cfg.delivery.channels and secrets.gmail_address and secrets.gmail_app_password:
-            to = cfg.delivery.email_to or secrets.gmail_address
-            send_email(summaries, title=title, to=to)
+            subs = load_subscribers()
+            if cfg.delivery.email_to:
+                summaries, _ = build_user_digest(ranked, {}, verbose=True)
+                if summaries:
+                    send_email(summaries, title=title, to=cfg.delivery.email_to)
+            elif subs:
+                for sub in subs:
+                    print(f"  → Generating configured digest for {sub.get('email')}...")
+                    sub_sums, _ = build_user_digest(ranked, sub, verbose=True)
+                    if sub_sums:
+                        send_email(sub_sums, title=title, to=sub["email"])
+            else:
+                summaries, _ = build_user_digest(ranked, {}, verbose=True)
+                if summaries:
+                    send_email(summaries, title=title)
     finally:
         _running = False

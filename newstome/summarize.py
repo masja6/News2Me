@@ -41,9 +41,15 @@ def _extract_json(text: str) -> dict:
     return json.loads(t)
 
 
-def summarize(article: Article, cfg: Summarizer) -> Summary:
+def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_busting: bool = False) -> Summary:
     content = (article.content or "")[: cfg.max_article_chars]
     prompt = f"Title: {article.title}\n\nArticle:\n{content}"
+
+    system_prompt = SYSTEM
+    if tone and tone.lower() != "standard":
+        system_prompt += f"\n- Tone adjustment: Adopt the following tone in your body perfectly: {tone}."
+    if jargon_busting:
+        system_prompt += "\n- Jargon busting: Identify any complex finance, technical, or policy jargon and wrap them cleanly in HTML <abbr title='simple definition'>term</abbr> tags."
 
     response = None
     for attempt in range(4):
@@ -51,7 +57,7 @@ def summarize(article: Article, cfg: Summarizer) -> Summary:
             response = _client.messages.create(
                 model=secrets.summary_model,
                 max_tokens=400,
-                system=SYSTEM,
+                system=system_prompt,
                 messages=[{"role": "user", "content": prompt}],
             )
             break

@@ -1,9 +1,13 @@
 import smtplib
+import json
+from pathlib import Path
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from .config import secrets
 from .summarize import Summary
+
+SUBSCRIBERS_PATH = Path("data/subscribers.json")
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -80,15 +84,28 @@ def _text_body(summaries: list[Summary], title: str) -> str:
     return "\n".join(lines)
 
 
-def send_email(summaries: list[Summary], title: str, to: str | None = None) -> None:
+def send_email(summaries: list[Summary], title: str, to: str | list[str] | None = None) -> None:
     if not summaries:
         return
 
-    recipient = to or secrets.gmail_address
+    recipients = []
+    if to:
+        recipients = [to] if isinstance(to, str) else to
+    else:
+        if SUBSCRIBERS_PATH.exists():
+            try:
+                subs = json.loads(SUBSCRIBERS_PATH.read_text())
+                recipients = [s["email"] for s in subs if "email" in s]
+            except Exception:
+                pass
+        
+        if not recipients:
+            recipients = [secrets.gmail_address]
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = title
     msg["From"] = secrets.gmail_address
-    msg["To"] = recipient
+    msg["To"] = "undisclosed-recipients:;"
 
     msg.attach(MIMEText(_text_body(summaries, title), "plain"))
     msg.attach(MIMEText(_html_body(summaries, title), "html"))
@@ -97,4 +114,4 @@ def send_email(summaries: list[Summary], title: str, to: str | None = None) -> N
         smtp.ehlo()
         smtp.starttls()
         smtp.login(secrets.gmail_address, secrets.gmail_app_password)
-        smtp.sendmail(secrets.gmail_address, recipient, msg.as_string())
+        smtp.sendmail(secrets.gmail_address, recipients, msg.as_string())

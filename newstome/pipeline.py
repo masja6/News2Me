@@ -10,13 +10,13 @@ from .config import load_config
 from .dedupe import filter_unseen, mark_seen
 from .fetch import fetch_all
 from .qc import QcReport, check
-from .rank import enforce_diversity, rank
+from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
 
-def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
+def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     cfg = load_config()
     log = print if verbose else (lambda *a, **k: None)
 
@@ -40,13 +40,30 @@ def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
     log(f"  {len(clusters)} clusters after similarity grouping")
 
     ranked = rank(clusters, cfg.ranking)
-    selected = enforce_diversity(ranked, cfg.ranking.per_category_max, cfg.ranking.max_items, cfg.ranking.per_region_max)
-    log(f"  {len(selected)} top clusters after diversity caps")
+    return ranked
+
+
+def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
+    cfg = load_config()
+    log = print if verbose else (lambda *a, **k: None)
+
+    user_cats = set(user.get("india_categories", []) + user.get("global_categories", []))
+    if user_cats:
+        user_ranked = [rc for rc in ranked if rc.articles[0].category in user_cats]
+    else:
+        user_ranked = ranked
+
+    max_items = user.get("max_items", cfg.ranking.max_items)
+    tone = user.get("tone", "Standard")
+    jargon = user.get("jargon_busting", False)
+
+    selected = enforce_diversity(user_ranked, cfg.ranking.per_category_max, max_items, cfg.ranking.per_region_max)
+    log(f"  {len(selected)} top clusters after diversity caps for {user.get('email', 'global')}")
 
     if not selected:
         return [], None
 
-    log("Summarizing...")
+    log(f"Summarizing (Tone: {tone}, Jargon: {jargon})...")
     summaries: list[Summary] = []
     for rc in selected:
         rep = cluster_representative(rc.articles)
@@ -56,7 +73,7 @@ def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
         if summaries:
             time.sleep(cfg.summarizer.request_delay_sec)
         try:
-            s = summarize(rep, cfg.summarizer)
+            s = summarize(rep, cfg.summarizer, tone=tone, jargon_busting=jargon)
         except Exception as e:
             log(f"  summarize failed ({type(e).__name__}); stopping with {len(summaries)} stories")
             break
@@ -67,12 +84,17 @@ def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
     report = check(summaries, min_categories=cfg.qc.min_categories)
     for issue in report.issues:
         log(f"  [{issue.severity}] {issue.message}")
-    log(f"  categories in digest: {report.category_counts}")
 
     if summaries:
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
     return summaries, report
+
+
+def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
+    ranked = prepare_clusters(verbose)
+    cfg = load_config()
+    return build_user_digest(ranked, {"max_items": cfg.ranking.max_items}, verbose)
 
 
 def _save_last_digest(summaries: list[Summary], report: QcReport | None) -> None:
