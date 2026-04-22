@@ -28,12 +28,40 @@ def index(request: Request):
 
 
 @app.post("/subscribe")
-async def subscribe(request: Request):
+async def subscribe(request: Request, background: BackgroundTasks):
     data = await request.json()
     data["setup_complete"] = True
     data["created_at"] = datetime.now(timezone.utc).isoformat()
     save_subscriber(data)
+    
+    # Trigger first digest immediately
+    background.add_task(_send_welcome_digest, data)
+    
     return {"status": "ok"}
+
+
+def _send_welcome_digest(user: dict) -> None:
+    """Generates and sends the first digest immediately to a new subscriber."""
+    try:
+        print(f"🚀 Generating welcome digest for {user.get('email')}...")
+        cfg = load_config()
+        
+        # 1. Fetch fresh clusters
+        ranked = prepare_clusters(verbose=True)
+        if not ranked:
+            print("  ! No stories found for welcome digest.")
+            return
+
+        # 2. Build personalized summary
+        summaries, _ = build_user_digest(ranked, user, verbose=True)
+        
+        # 3. Send via Email
+        if summaries and secrets.gmail_address and secrets.gmail_app_password:
+            title = f"Welcome to {cfg.telegram.digest_title}!"
+            send_email(summaries, title=title, to=user["email"])
+            print(f"  ✓ Welcome digest sent to {user.get('email')}")
+    except Exception as e:
+        print(f"  ❌ Failed to send welcome digest: {e}")
 
 
 @app.get("/admin", response_class=HTMLResponse)
