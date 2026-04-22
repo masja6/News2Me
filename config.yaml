@@ -15,6 +15,26 @@ feeds:
     url: https://techcrunch.com/feed/
     category: global_startups
     trust: 0.88
+  - name: TechCrunch Startups
+    url: https://techcrunch.com/category/startups/feed/
+    category: global_startups
+    trust: 0.88
+  - name: OpenAI News
+    url: https://openai.com/news/rss.xml
+    category: global_ai
+    trust: 0.95
+  - name: MIT Tech Review AI
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    category: global_ai
+    trust: 0.9
+  - name: Space.com
+    url: https://www.space.com/feeds/all
+    category: global_space
+    trust: 0.85
+  - name: NASA Breaking News
+    url: https://www.nasa.gov/rss/dyn/breaking_news.rss
+    category: global_space
+    trust: 0.95
   - name: Hacker News front page
     url: https://news.ycombinator.com/rss
     category: global_oss
@@ -37,6 +57,7 @@ categories:
   - global_oss
   - global_hardware
   - global_policy
+  - global_space
   - global_other
   - other
 

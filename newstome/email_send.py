@@ -29,6 +29,7 @@ CATEGORY_LABELS = {
     "global_oss": "⚙️ Open Source",
     "global_hardware": "🖥 Hardware",
     "global_policy": "🌐 Global Policy",
+    "global_space": "🌌 Space",
     "global_other": "🌍 Global",
     "other": "📰 News",
 }
