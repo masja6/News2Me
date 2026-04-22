@@ -14,8 +14,8 @@ class Secrets(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     anthropic_api_key: str
-    telegram_bot_token: str
-    telegram_chat_id: str
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
     gemini_api_key: str = ""
     gmail_address: str = ""
     gmail_app_password: str = ""
