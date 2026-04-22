@@ -31,6 +31,7 @@ class Summary:
     url: str
     source: str
     category: str
+    date: str
 
 
 def _extract_json(text: str) -> dict:
@@ -79,6 +80,7 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
         url=article.url,
         source=article.source,
         category=article.category,
+        date=article.published or "",
     )
 
 

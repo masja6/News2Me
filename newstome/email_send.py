@@ -34,14 +34,26 @@ CATEGORY_LABELS = {
 }
 
 
+def _fmt_date(date_str: str) -> str:
+    """Minimal DD MMM formatter for RSS dates."""
+    if not date_str: return ""
+    try:
+        from email.utils import parsedate_to_datetime
+        dt = parsedate_to_datetime(date_str)
+        return dt.strftime("%d %b")
+    except:
+        return date_str.split()[0:4][-1] if date_str else ""
+
+
 def _html_body(summaries: list[Summary], title: str) -> str:
     items = ""
     for s in summaries:
         label = CATEGORY_LABELS.get(s.category, s.category)
+        date_chip = _fmt_date(s.date)
         items += f"""
         <tr>
           <td style="padding:16px 0;border-bottom:1px solid #eee;">
-            <div style="font-size:11px;color:#888;margin-bottom:4px;">{label} &nbsp;·&nbsp; {s.source}</div>
+            <div style="font-size:11px;color:#888;margin-bottom:4px;">{label} &nbsp;·&nbsp; {s.source} &nbsp;·&nbsp; {date_chip}</div>
             <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px;line-height:1.3">{s.headline}</div>
             <div style="font-size:14px;color:#444;line-height:1.6;margin-bottom:8px">{s.body}</div>
             <a href="{s.url}" style="font-size:12px;color:#1b4aef;text-decoration:none;">Read more →</a>
@@ -67,7 +79,7 @@ def _html_body(summaries: list[Summary], title: str) -> str:
         </tr>
         <tr>
           <td style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #eee;">
-            <div style="font-size:11px;color:#aaa;">Delivered by NewsToMe · Powered by Claude Haiku</div>
+            <div style="font-size:11px;color:#aaa;">Delivered by NewsToMe · Powered by Shelby Co.</div>
           </td>
         </tr>
       </table>

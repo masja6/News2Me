@@ -56,7 +56,7 @@ def save_delivery_log(user_email: str, summaries: list, tone: str) -> None:
         "email": user_email,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "tone": tone,
-        "stories": [{"title": s.headline, "url": s.url, "category": s.category} for s in summaries]
+        "stories": [{"title": s.headline, "url": s.url, "category": s.category, "date": s.date} for s in summaries]
     }
     db = _get_db()
     if db is not False:
