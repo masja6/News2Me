@@ -14,7 +14,7 @@ from .email_send import send_email
 
 app = FastAPI(title="NewsToMe Admin")
 templates = Jinja2Templates(directory="templates")
-from .db import load_subscribers, save_subscriber
+from .db import load_subscribers, save_subscriber, load_delivery_logs
 
 
 _running = False
@@ -104,6 +104,7 @@ def admin(request: Request):
         "qc_ok": qc_ok,
         "qc_issues": qc_issues,
         "category_counts": category_counts,
+        "delivery_logs": load_delivery_logs(20),
     })
 
 

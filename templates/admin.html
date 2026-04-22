@@ -96,14 +96,17 @@
   .btn-save { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
   .btn-save:hover { background: #1339cc; }
 
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #111; color: #fff; padding: 10px 24px; border-radius: 100px;
-    font-size: 14px; z-index: 100; opacity: 0; pointer-events: none;
-    transition: opacity 0.3s;
-  }
   .toast.show { opacity: 1; }
+
+  /* Delivery Logs */
+  .log-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .log-email { font-weight: 700; color: var(--text); }
+  .log-time { color: var(--muted); font-size: 11px; }
+  .log-tone { font-size: 11px; background: #fff3e0; color: #e65100; border-radius: 4px; padding: 1px 6px; }
+  .log-stories { margin-top: 4px; color: var(--muted); line-height: 1.4; }
+  .log-story-dot { color: var(--blue); margin-right: 4px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -220,6 +223,29 @@
     {% endfor %}
     {% if email_to %}
     <p style="font-size:13px;color:var(--muted);margin-top:8px">Email → {{ email_to }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Recent Deliveries -->
+  <div class="card card-full">
+    <div class="card-title">Recent Deliveries (Last 20)</div>
+    {% if delivery_logs %}
+      {% for log in delivery_logs %}
+      <div class="log-item">
+        <div class="log-meta">
+          <span class="log-email">{{ log.email }}</span>
+          <span class="log-tone">{{ log.tone }}</span>
+          <span class="log-time">{{ log.timestamp.split('T')[0] }} {{ log.timestamp.split('T')[1][:5] }}</span>
+        </div>
+        <div class="log-stories">
+          {% for story in log.stories %}
+            <span class="log-story-dot">•</span> {{ story.title }}{% if not loop.last %} &nbsp; {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="font-size:13px;color:var(--muted)">No delivery history available.</p>
     {% endif %}
   </div>
 

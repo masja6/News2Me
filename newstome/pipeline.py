@@ -12,6 +12,7 @@ from .fetch import fetch_all
 from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize
+from .db import save_delivery_log
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
@@ -88,6 +89,8 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     if summaries:
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
+        if user.get("email"):
+            save_delivery_log(user["email"], summaries, tone)
     return summaries, report
 
 

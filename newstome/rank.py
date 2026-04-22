@@ -59,15 +59,20 @@ def _region(category: str) -> str:
 
 
 def enforce_diversity(ranked: list[RankedCluster], per_category_max: int, max_items: int, per_region_max: int = 6) -> list[RankedCluster]:
+    # Relax caps to ensure we don't accidentally block requested story volume
+    # If a user wants 15 stories, we shouldn't cap them at 6 per region.
+    actual_region_max = max(per_region_max, max_items)
+    actual_cat_max = max(per_category_max, math.ceil(max_items / 3))
+
     per_cat: dict[str, int] = {}
     per_reg: dict[str, int] = {}
     out: list[RankedCluster] = []
     for rc in ranked:
         cat = rc.articles[0].category
         reg = _region(cat)
-        if per_cat.get(cat, 0) >= per_category_max:
+        if per_cat.get(cat, 0) >= actual_cat_max:
             continue
-        if per_reg.get(reg, 0) >= per_region_max:
+        if per_reg.get(reg, 0) >= actual_region_max:
             continue
         out.append(rc)
         per_cat[cat] = per_cat.get(cat, 0) + 1
