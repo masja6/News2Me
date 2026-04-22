@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewsToMe — Admin</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #1b4aef; --blue-light: #e8eeff;
+    --text: #111; --muted: #666; --bg: #f7f7f9; --white: #fff;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Header */
+  .header {
+    background: #111; color: #fff;
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; position: sticky; top: 0; z-index: 10;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
+  .user-pill {
+    background: rgba(255,255,255,0.12); border-radius: 100px;
+    padding: 4px 12px; font-size: 13px; color: #ccc;
+  }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .btn { border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-run { background: var(--blue); color: #fff; }
+  .btn-run:hover { background: #1339cc; }
+  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.25); color: #ccc; }
+  .btn-outline:hover { background: rgba(255,255,255,0.08); }
+
+  /* Layout */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .main { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card { background: var(--white); border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card-full { grid-column: 1 / -1; }
+  .card-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 16px; }
+
+  /* Status banner */
+  .status-bar { grid-column: 1/-1; background: var(--white); border-radius: 16px; padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .status-dot.warn { background: #ff9800; }
+  .status-dot.running { background: var(--blue); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Feeds list */
+  .feed-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .feed-name { font-weight: 600; flex: 1; }
+  .feed-cat { font-size: 11px; background: var(--blue-light); color: var(--blue); border-radius: 100px; padding: 2px 8px; }
+  .feed-trust { font-size: 12px; color: var(--muted); }
+
+  /* Ranking params */
+  .param-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .param-row:last-child { border-bottom: none; }
+  .param-val { font-weight: 700; color: var(--blue); }
+
+  /* QC */
+  .qc-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
+  .qc-pass { background: #e8f5e9; color: #2e7d32; }
+  .qc-fail { background: #fdecea; color: #c62828; }
+  .qc-issue { padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; color: #b76000; }
+  .qc-issue:last-child { border-bottom: none; }
+  .cat-bar { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .cat-fill { height: 6px; border-radius: 3px; background: var(--blue); min-width: 4px; transition: width 0.4s; }
+
+  /* Digest list */
+  .story { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+  .story:last-child { border-bottom: none; }
+  .story-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .story-cat { font-size: 11px; background: var(--blue-light); color: var(--blue); border-radius: 100px; padding: 2px 8px; font-weight: 600; }
+  .story-source { font-size: 12px; color: var(--muted); }
+  .story-headline { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .story-body { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
+  .story-link { font-size: 12px; color: var(--blue); text-decoration: none; }
+  .story-link:hover { text-decoration: underline; }
+
+  /* Config editor */
+  .yaml-wrap { position: relative; }
+  textarea {
+    width: 100%; min-height: 340px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px;
+    padding: 16px; border: 1px solid #e0e0e0; border-radius: 10px;
+    resize: vertical; outline: none; line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--blue); }
+  .save-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-save { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn-save:hover { background: #1339cc; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 24px; border-radius: 100px;
+    font-size: 14px; z-index: 100; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="logo">✦ NewsToMe</span>
+    {% if user %}<span class="user-pill">{{ user.name }}</span>{% endif %}
+  </div>
+  <div class="header-right">
+    <form action="/admin/run" method="post" style="margin:0">
+      <button class="btn btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
+        {{ '⟳ Running…' if running else '▶ Run digest now' }}
+      </button>
+    </form>
+    <a href="/"><button class="btn btn-outline" type="button">⚙ Re-setup</button></a>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-dot {{ 'running' if running else ('warn' if not qc_ok else '') }}"></div>
+    <span>
+      {% if running %}Building digest — check Telegram / email when done.
+      {% elif last_generated %}Last digest: <b>{{ last_generated }}</b> · {{ story_count }} stories
+      {% else %}No digest generated yet. Click <b>Run digest now</b>.{% endif %}
+    </span>
+    {% if not qc_ok %}
+      <span style="margin-left:auto;font-size:12px;color:#b76000">⚠ QC issues detected</span>
+    {% endif %}
+  </div>
+
+  <!-- Feeds -->
+  <div class="card">
+    <div class="card-title">Active Feeds ({{ feeds|length }})</div>
+    {% for f in feeds %}
+    <div class="feed-item">
+      <div class="feed-dot"></div>
+      <span class="feed-name">{{ f.name }}</span>
+      <span class="feed-cat">{{ f.category }}</span>
+      <span class="feed-trust">{{ f.trust }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Ranking params -->
+  <div class="card">
+    <div class="card-title">Ranking Parameters</div>
+    {% for k, v in ranking.items() %}
+    <div class="param-row"><span>{{ k.replace('_', ' ') }}</span><span class="param-val">{{ v }}</span></div>
+    {% endfor %}
+  </div>
+
+  <!-- QC report -->
+  <div class="card">
+    <div class="card-title">QC Report</div>
+    {% if qc %}
+      <div style="margin-bottom:12px">
+        <span class="qc-badge {{ 'qc-pass' if qc_ok else 'qc-fail' }}">
+          {{ '✓ Pass' if qc_ok else '⚠ Issues' }}
+        </span>
+      </div>
+      {% if category_counts %}
+        {% set max_count = category_counts.values()|max %}
+        {% for cat, n in category_counts.items()|sort(attribute='1', reverse=True) %}
+        <div class="cat-bar">
+          <span style="width:150px;font-size:12px;color:var(--muted)">{{ cat }}</span>
+          <div class="cat-fill" style="width:{{ (n / max_count * 120)|int }}px"></div>
+          <span style="font-size:12px;font-weight:700">{{ n }}</span>
+        </div>
+        {% endfor %}
+      {% endif %}
+      {% if qc_issues %}
+        <div style="margin-top:12px">
+        {% for issue in qc_issues %}
+          <div class="qc-issue">{{ issue.severity|upper }} · {{ issue.message }}</div>
+        {% endfor %}
+        </div>
+      {% else %}
+        <p style="font-size:13px;color:#2e7d32;margin-top:12px">No issues found.</p>
+      {% endif %}
+    {% else %}
+      <p style="font-size:13px;color:var(--muted)">Run a digest to see QC results.</p>
+    {% endif %}
+  </div>
+
+  <!-- Delivery -->
+  <div class="card">
+    <div class="card-title">Delivery Channels</div>
+    {% for ch in channels %}
+    <div class="feed-item">
+      <div class="feed-dot"></div>
+      <span class="feed-name">{{ ch }}</span>
+    </div>
+    {% endfor %}
+    {% if email_to %}
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">Email → {{ email_to }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Last digest -->
+  <div class="card card-full">
+    <div class="card-title">Last Digest</div>
+    {% if summaries %}
+      {% for s in summaries %}
+      <div class="story">
+        <div class="story-meta">
+          <span class="story-cat">{{ s.category }}</span>
+          <span class="story-source">{{ s.source }}</span>
+        </div>
+        <div class="story-headline">{{ s.headline }}</div>
+        <div class="story-body">{{ s.body }}</div>
+        <a class="story-link" href="{{ s.url }}" target="_blank">Read more →</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="font-size:14px;color:var(--muted)">No digest yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Config editor -->
+  <div class="card card-full">
+    <div class="card-title">Edit config.yaml</div>
+    <div class="yaml-wrap">
+      <form action="/admin/save" method="post">
+        <textarea name="yaml_text">{{ yaml_text }}</textarea>
+        <div class="save-row">
+          <button class="btn-save" type="submit">Save config</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Show toast if URL has ?saved=1
+const p = new URLSearchParams(location.search);
+if (p.get('saved')) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ Config saved';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+  history.replaceState({}, '', '/admin');
+}
+</script>
+</body>
+</html>

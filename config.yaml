@@ -1,0 +1,67 @@
+feeds:
+  - name: The Hindu - National
+    url: https://www.thehindu.com/news/national/feeder/default.rss
+    category: india_other
+    trust: 0.9
+  - name: Indian Express - India
+    url: https://indianexpress.com/section/india/feed/
+    category: india_other
+    trust: 0.85
+  - name: Livemint - Markets
+    url: https://www.livemint.com/rss/markets
+    category: india_markets
+    trust: 0.85
+  - name: TechCrunch
+    url: https://techcrunch.com/feed/
+    category: global_startups
+    trust: 0.88
+  - name: Hacker News front page
+    url: https://news.ycombinator.com/rss
+    category: global_oss
+    trust: 0.82
+
+categories:
+  - india_politics
+  - india_markets
+  - india_business
+  - india_policy
+  - india_sports
+  - india_science
+  - india_entertainment
+  - india_geopolitics
+  - india_other
+  - global_ai
+  - global_bigtech
+  - global_startups
+  - global_security
+  - global_oss
+  - global_hardware
+  - global_policy
+  - global_other
+  - other
+
+ranking:
+  max_items: 10
+  per_category_max: 2
+  per_region_max: 6
+  dedupe_similarity: 82
+  recency_weight: 0.5
+  trust_weight: 0.3
+  cluster_size_weight: 0.2
+
+summarizer:
+  request_delay_sec: 0
+  max_article_chars: 6000
+
+qc:
+  min_categories: 4
+  max_share_per_category: 0.5
+
+delivery:
+  channels:
+    - telegram
+    - email        # remove this line to disable email
+  email_to: ""    # leave empty to send to GMAIL_ADDRESS in .env
+
+telegram:
+  digest_title: "Morning Digest"

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewsToMe — Setup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #1b4aef;
+    --blue-light: #e8eeff;
+    --text: #111;
+    --muted: #888;
+    --bg: #f7f7f9;
+    --white: #fff;
+    --radius: 14px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+  }
+
+  /* Progress bar */
+  .progress {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: #e0e0e0;
+    z-index: 100;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--blue);
+    width: 0%;
+    transition: width 0.5s var(--ease);
+  }
+
+  /* Main card */
+  .card {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 560px;
+    padding: 56px 52px 48px;
+    position: relative;
+    min-height: 440px;
+    overflow: hidden;
+  }
+
+  /* Steps */
+  .step {
+    position: absolute;
+    inset: 56px 52px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(48px);
+    pointer-events: none;
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+  }
+  .step.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+  .step.exit-up {
+    opacity: 0;
+    transform: translateY(-48px);
+    pointer-events: none;
+  }
+  .step.exit-down {
+    opacity: 0;
+    transform: translateY(48px);
+    pointer-events: none;
+  }
+
+  /* Typography */
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--blue);
+    background: var(--blue-light);
+    border-radius: 100px;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+    width: fit-content;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .sub {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 32px;
+  }
+  .question {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Inputs */
+  .input-wrap { position: relative; margin-bottom: 24px; }
+  input[type=text], input[type=email] {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 18px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--white);
+  }
+  input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 4px rgba(27,74,239,0.08);
+  }
+  input.shake {
+    animation: shake 0.4s ease;
+    border-color: #e53935;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-6px); }
+    40%,80% { transform: translateX(6px); }
+  }
+  .hint {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: -16px;
+    margin-bottom: 24px;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    text-decoration: none;
+    width: fit-content;
+  }
+  .btn-primary:hover {
+    background: #1339cc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(27,74,239,0.3);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Back button */
+  .btn-back {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: none;
+    border: 2px solid #e0e0e0;
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .btn-back:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* Step counter */
+  .step-counter {
+    position: fixed;
+    top: 24px;
+    right: 32px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 100px;
+    border: 2px solid #e0e0e0;
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s var(--ease);
+    color: var(--text);
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--blue); color: var(--blue); }
+  .chip.selected {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+    transform: scale(1.03);
+  }
+  .chip .check { font-size: 11px; opacity: 0; transition: opacity 0.15s; }
+  .chip.selected .check { opacity: 1; }
+
+  /* Slider */
+  .slider-section { margin-bottom: 28px; }
+  .count-display {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--blue);
+    margin-bottom: 16px;
+    letter-spacing: -0.03em;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(27,74,239,0.3);
+    transition: transform 0.15s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Done screen */
+  .checkmark-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #e8f5e9;
+    margin-bottom: 24px;
+    animation: pop 0.5s var(--ease) forwards;
+  }
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  .checkmark {
+    font-size: 32px;
+    color: #2e7d32;
+  }
+  .summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 28px;
+  }
+  .summary-chip {
+    font-size: 12px;
+    background: var(--blue-light);
+    color: var(--blue);
+    border-radius: 100px;
+    padding: 4px 10px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+<div class="step-counter" id="step-counter"></div>
+
+<div class="card">
+
+  <!-- Step 0: Welcome -->
+  <div class="step active" id="step-0">
+    <div class="badge">✦ NewsToMe</div>
+    <h1>Your Morning<br>Intelligence Brief.</h1>
+    <p class="sub">Personalised. Concise. Delivered to your inbox every day at 7 AM IST.</p>
+    <button class="btn-primary" onclick="goTo(1)">Get started <span>→</span></button>
+  </div>
+
+  <!-- Step 1: Name -->
+  <div class="step" id="step-1">
+    <p class="question">What should we call you?</p>
+    <div class="input-wrap">
+      <input type="text" id="name-input" placeholder="Your name" autocomplete="given-name">
+    </div>
+    <button class="btn-primary" onclick="nextIfName()">Continue →</button>
+  </div>
+
+  <!-- Step 2: Email -->
+  <div class="step" id="step-2">
+    <p class="question" id="email-q">Where should we send your digest?</p>
+    <div class="input-wrap">
+      <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <p class="hint">📬 Delivered every morning at 7 AM IST · No spam, ever</p>
+    <button class="btn-primary" onclick="nextIfEmail()">Continue →</button>
+  </div>
+
+  <!-- Step 3: India topics -->
+  <div class="step" id="step-3">
+    <p class="question" id="india-q">Which India topics matter to you?</p>
+    <div class="chips" id="india-chips"></div>
+    <button class="btn-primary" onclick="goTo(4)">Continue →</button>
+  </div>
+
+  <!-- Step 4: Global topics -->
+  <div class="step" id="step-4">
+    <p class="question">And from the global stage?</p>
+    <div class="chips" id="global-chips"></div>
+    <button class="btn-primary" onclick="goTo(5)">Continue →</button>
+  </div>
+
+  <!-- Step 5: Count -->
+  <div class="step" id="step-5">
+    <p class="question">How many stories per morning?</p>
+    <div class="slider-section">
+      <div class="count-display" id="count-display">10</div>
+      <input type="range" id="count-slider" min="5" max="15" value="10">
+      <div class="slider-labels"><span>5 stories</span><span>15 stories</span></div>
+    </div>
+    <button class="btn-primary" id="finish-btn" onclick="submitOnboard()">Set up my digest →</button>
+  </div>
+
+  <!-- Step 6: Done -->
+  <div class="step" id="step-6">
+    <div class="checkmark-wrap"><span class="checkmark">✓</span></div>
+    <h1 id="done-title">You're all set!</h1>
+    <p class="sub" id="done-sub">Your Morning Digest arrives at 7 AM IST every day.</p>
+    <div class="summary-chips" id="summary-chips"></div>
+    <a href="/admin" class="btn-primary">Go to dashboard →</a>
+  </div>
+
+</div>
+
+<button class="btn-back" id="back-btn" onclick="goBack()">← Back</button>
+
+<script>
+const TOTAL_STEPS = 6;
+let current = 0;
+
+const INDIA = [
+  { v: 'india_politics',      l: 'Politics',        e: '🏛', d: true  },
+  { v: 'india_markets',       l: 'Markets',         e: '📈', d: true  },
+  { v: 'india_business',      l: 'Business',        e: '💼', d: false },
+  { v: 'india_policy',        l: 'Policy',          e: '📋', d: true  },
+  { v: 'india_geopolitics',   l: 'Geopolitics',     e: '🌏', d: true  },
+  { v: 'india_sports',        l: 'Sports',          e: '🏏', d: false },
+  { v: 'india_science',       l: 'Science & Health',e: '🔬', d: false },
+  { v: 'india_entertainment', l: 'Entertainment',   e: '🎬', d: false },
+];
+const GLOBAL = [
+  { v: 'global_ai',       l: 'AI & ML',      e: '🤖', d: true  },
+  { v: 'global_bigtech',  l: 'Big Tech',     e: '💻', d: true  },
+  { v: 'global_startups', l: 'Startups',     e: '🚀', d: true  },
+  { v: 'global_security', l: 'Security',     e: '🔐', d: true  },
+  { v: 'global_oss',      l: 'Open Source',  e: '⚙️', d: false },
+  { v: 'global_hardware', l: 'Hardware',     e: '🖥',  d: false },
+  { v: 'global_policy',   l: 'Policy',       e: '🌐', d: false },
+];
+
+function renderChips(containerId, chips) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = chips.map(c => `
+    <button type="button" class="chip ${c.d ? 'selected' : ''}" data-value="${c.v}" onclick="toggleChip(this)">
+      ${c.e} ${c.l} <span class="check">✓</span>
+    </button>`).join('');
+}
+
+function toggleChip(el) {
+  el.classList.toggle('selected');
+}
+
+function getSelected(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(el => el.dataset.value);
+}
+
+function goTo(n) {
+  const steps = document.querySelectorAll('.step');
+  const dir = n > current;
+
+  steps[current].classList.remove('active');
+  steps[current].classList.add(dir ? 'exit-up' : 'exit-down');
+  setTimeout(() => steps[current].classList.remove('exit-up', 'exit-down'), 500);
+
+  current = n;
+
+  setTimeout(() => {
+    steps[current].classList.add('active');
+    const inp = steps[current].querySelector('input[type=text],input[type=email]');
+    if (inp) inp.focus();
+  }, 60);
+
+  const pct = (current / TOTAL_STEPS) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('back-btn').style.display = current > 0 && current < TOTAL_STEPS ? 'block' : 'none';
+  document.getElementById('step-counter').textContent = current > 0 && current < TOTAL_STEPS ? `${current} / ${TOTAL_STEPS - 1}` : '';
+
+  // Dynamic labels
+  const name = document.getElementById('name-input').value.trim();
+  if (n === 2 && name) document.getElementById('email-q').textContent = `Nice to meet you, ${name}! Where should we send your digest?`;
+  if (n === 3 && name) document.getElementById('india-q').textContent = `${name}, which India topics matter to you?`;
+}
+
+function goBack() { if (current > 0) goTo(current - 1); }
+
+function shake(id) {
+  const el = document.getElementById(id);
+  el.classList.add('shake');
+  el.focus();
+  setTimeout(() => el.classList.remove('shake'), 500);
+}
+
+function nextIfName() {
+  if (!document.getElementById('name-input').value.trim()) { shake('name-input'); return; }
+  goTo(2);
+}
+
+function nextIfEmail() {
+  const v = document.getElementById('email-input').value.trim();
+  if (!v || !v.includes('@') || !v.includes('.')) { shake('email-input'); return; }
+  goTo(3);
+}
+
+async function submitOnboard() {
+  const btn = document.getElementById('finish-btn');
+  btn.textContent = 'Setting up…';
+  btn.disabled = true;
+
+  const indiaSelected = getSelected('india-chips');
+  const globalSelected = getSelected('global-chips');
+  const maxItems = parseInt(document.getElementById('count-slider').value);
+
+  const payload = {
+    name: document.getElementById('name-input').value.trim(),
+    email: document.getElementById('email-input').value.trim(),
+    india_categories: indiaSelected,
+    global_categories: globalSelected,
+    max_items: maxItems,
+  };
+
+  try {
+    await fetch('/onboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch(e) { console.error(e); }
+
+  // Build summary chips
+  const allCats = [...indiaSelected, ...globalSelected];
+  const labels = Object.fromEntries([...INDIA,...GLOBAL].map(x => [x.v, `${x.e} ${x.l}`]));
+  document.getElementById('summary-chips').innerHTML =
+    allCats.map(c => `<span class="summary-chip">${labels[c] || c}</span>`).join('') +
+    `<span class="summary-chip">📰 ${maxItems} stories/day</span>`;
+
+  const name = document.getElementById('name-input').value.trim();
+  document.getElementById('done-title').textContent = `You're all set, ${name}!`;
+
+  goTo(6);
+}
+
+// Slider live update
+const slider = document.getElementById('count-slider');
+slider.addEventListener('input', () => {
+  document.getElementById('count-display').textContent = slider.value;
+});
+
+// Enter key advances
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const step = document.querySelector('.step.active');
+  const btn = step.querySelector('.btn-primary');
+  if (btn) btn.click();
+});
+
+// Init chips
+renderChips('india-chips', INDIA);
+renderChips('global-chips', GLOBAL);
+</script>
+</body>
+</html>
