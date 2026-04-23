@@ -31,12 +31,7 @@ jobs:
       - name: Byte-compile package (catches syntax errors early)
         run: python -m compileall newstome
 
-      - name: Run pytest
+      - name: Run tests and evals
         env:
           ANTHROPIC_API_KEY: dummy-for-import
-        run: pytest -q
-
-      - name: Run evals
-        env:
-          ANTHROPIC_API_KEY: dummy-for-import
-        run: pytest evals/ -q --tb=short
+        run: pytest -q --tb=short
