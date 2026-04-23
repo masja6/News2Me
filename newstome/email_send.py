@@ -58,6 +58,15 @@ def _unsubscribe_url(base_url: str, email: str | None) -> str | None:
 def _html_body(summaries: list[Summary], title: str, email: str | None = None) -> str:
     items = ""
     base_url = secrets.app_url.rstrip("/")
+    unsub_html = ""
+    if email:
+        unsub_link = _unsubscribe_url(base_url, email)
+        unsub_html = (
+            '<div style="font-size:11px;color:#aaa;margin-top:4px;">'
+            "Don&#39;t want these? "
+            f'<a href="{unsub_link}" style="color:#888;text-decoration:underline;">Unsubscribe</a>.'
+            "</div>"
+        )
     for s in summaries:
         label = CATEGORY_LABELS.get(s.category, s.category)
         date_chip = _fmt_date(s.date)
@@ -99,7 +108,7 @@ def _html_body(summaries: list[Summary], title: str, email: str | None = None) -
         <tr>
           <td style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #eee;">
             <div style="font-size:11px;color:#aaa;">Delivered by NewsToMe · Powered by Shelby Co.</div>
-            {f'<div style="font-size:11px;color:#aaa;margin-top:4px;">Don\'t want these? <a href="{_unsubscribe_url(base_url, email)}" style="color:#888;text-decoration:underline;">Unsubscribe</a>.</div>' if email else ''}
+            {unsub_html}
           </td>
         </tr>
       </table>
