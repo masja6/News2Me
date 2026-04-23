@@ -61,10 +61,11 @@ def _html_body(summaries: list[Summary], title: str, email: str | None = None) -
     unsub_html = ""
     if email:
         unsub_link = _unsubscribe_url(base_url, email)
+        manage_link = f"{base_url}/manage"
         unsub_html = (
             '<div style="font-size:11px;color:#aaa;margin-top:4px;">'
-            "Don&#39;t want these? "
-            f'<a href="{unsub_link}" style="color:#888;text-decoration:underline;">Unsubscribe</a>.'
+            f'<a href="{manage_link}" style="color:#888;text-decoration:underline;">Manage Preferences</a> &nbsp;·&nbsp; '
+            f'<a href="{unsub_link}" style="color:#888;text-decoration:underline;">Unsubscribe</a>'
             "</div>"
         )
     for s in summaries:

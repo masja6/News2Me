@@ -4,17 +4,19 @@ from pathlib import Path
 
 import yaml
 from fastapi import BackgroundTasks, Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from .config import CONFIG_PATH, load_config, save_config, secrets
 from .pipeline import build_digest, build_user_digest, load_last_digest, prepare_clusters
 from .telegram import send_digest as tg_send
 from .email_send import send_email
-from .auth import require_admin, verify_unsubscribe_token
+from .auth import require_admin, verify_unsubscribe_token, create_session_token, verify_session_token
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="NewsToMe Admin")
@@ -35,6 +37,8 @@ from .db import (
     set_unsubscribed,
     load_digest_archive,
     list_digest_archive,
+    aggregate_clicks,
+    get_cache_stats,
 )
 
 
@@ -44,11 +48,54 @@ from .delivery import run_delivery_cycle
 _running = False
 
 
+# ── Auth & Session Helpers ──────────────────────────────────────────────────
+
+def get_current_user(request: Request) -> str | None:
+    token = request.cookies.get("session")
+    if not token:
+        return None
+    return verify_session_token(token)
+
+@app.post("/auth/google")
+async def auth_google(request: Request):
+    data = await request.json()
+    token = data.get("credential")
+    if not token:
+        return JSONResponse({"error": "No token provided"}, status_code=400)
+    
+    try:
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), secrets.google_client_id)
+        email = idinfo.get("email")
+        if not email:
+            return JSONResponse({"error": "No email in token"}, status_code=400)
+        
+        # Check if user exists
+        subs = load_subscribers()
+        is_existing = any(s.get("email") == email for s in subs)
+        
+        session_token = create_session_token(email)
+        response = JSONResponse({"success": True, "redirect": "/manage" if is_existing else "/onboard"})
+        response.set_cookie(key="session", value=session_token, httponly=True, secure=True, samesite="lax", max_age=86400 * 30)
+        return response
+    except ValueError as e:
+        return JSONResponse({"error": f"Invalid token: {e}"}, status_code=400)
+
+
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/")
+    response.delete_cookie("session")
+    return response
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return templates.TemplateResponse(request, "onboard.html")
+    user_email = get_current_user(request)
+    if user_email:
+        return RedirectResponse(url="/manage")
+    return templates.TemplateResponse(request, "landing.html", {"google_client_id": secrets.google_client_id})
 
 
 @app.get("/r")
@@ -101,16 +148,55 @@ async def unsubscribe(u: str, t: str):
     )
 
 
+@app.get("/onboard", response_class=HTMLResponse)
+def onboard(request: Request):
+    user_email = get_current_user(request)
+    if not user_email:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse(request, "onboard.html", {"email": user_email})
+
+
+@app.get("/manage", response_class=HTMLResponse)
+def manage(request: Request):
+    user_email = get_current_user(request)
+    if not user_email:
+        return RedirectResponse(url="/")
+    
+    subs = load_subscribers()
+    user_data = next((s for s in subs if s.get("email") == user_email), None)
+    if not user_data:
+        # If somehow they have a session but no DB entry, redirect to onboard
+        return RedirectResponse(url="/onboard")
+        
+    from .auth import unsubscribe_token
+    user_data["token"] = unsubscribe_token(user_email)
+        
+    return templates.TemplateResponse(request, "manage.html", {"user": user_data})
+
+
 @app.post("/subscribe")
 @limiter.limit("5/minute")
 async def subscribe(request: Request, background: BackgroundTasks):
+    user_email = get_current_user(request)
+    if not user_email:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
     data = await request.json()
+    data["email"] = user_email
     data["setup_complete"] = True
-    data["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Check if this is an update or a new sub
+    subs = load_subscribers()
+    is_new = not any(s.get("email") == user_email for s in subs)
+    
+    if is_new:
+        data["created_at"] = datetime.now(timezone.utc).isoformat()
+    
     save_subscriber(data)
     
-    # Trigger first digest immediately
-    background.add_task(_send_welcome_digest, data)
+    # Trigger first digest immediately if new
+    if is_new:
+        background.add_task(_send_welcome_digest, data)
     
     return {"status": "ok"}
 
@@ -139,6 +225,33 @@ def _send_welcome_digest(user: dict) -> None:
         print(f"  ❌ Failed to send welcome digest: {e}")
 
 
+@app.get("/archive", response_class=HTMLResponse)
+def archive(request: Request):
+    digests = list_digest_archive(limit=50)
+    return templates.TemplateResponse(request, "archive.html", {
+        "digests": digests,
+    })
+
+
+@app.get("/d/{date_key}", response_class=HTMLResponse)
+def view_digest(request: Request, date_key: str):
+    digest = load_digest_archive(date_key)
+    if not digest:
+        return HTMLResponse("Digest not found", status_code=404)
+    
+    # Format the date for display
+    try:
+        dt = datetime.fromisoformat(digest["date"])
+        display_date = dt.strftime("%B %d, %Y")
+    except:
+        display_date = digest["date"]
+
+    return templates.TemplateResponse(request, "digest_view.html", {
+        "digest": digest,
+        "display_date": display_date,
+    })
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin(request: Request, _: str = Depends(require_admin)):
     subscribers = load_subscribers()
@@ -164,6 +277,9 @@ def admin(request: Request, _: str = Depends(require_admin)):
     # Ranking params for display
     ranking_dict = cfg.ranking.model_dump()
 
+    # Run metrics (cache hit rate, token spend) from last digest
+    metrics = last.get("metrics") if last else None
+
     return templates.TemplateResponse(request, "admin.html", {
         "subscribers": subscribers,
         "running": _running,
@@ -180,6 +296,9 @@ def admin(request: Request, _: str = Depends(require_admin)):
         "qc_issues": qc_issues,
         "category_counts": category_counts,
         "delivery_logs": load_delivery_logs(20),
+        "click_stats": aggregate_clicks(),
+        "metrics": metrics,
+        "cache_stats": get_cache_stats(),
     })
 
 

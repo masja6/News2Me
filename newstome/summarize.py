@@ -13,6 +13,30 @@ import dataclasses
 
 _client = Anthropic(api_key=secrets.anthropic_api_key)
 
+# Rough Haiku 4.5 pricing (USD / 1M tokens). Used only for operator estimates.
+_PRICE_IN = 1.00 / 1_000_000
+_PRICE_OUT = 5.00 / 1_000_000
+
+# Per-run counters. Reset with reset_metrics() at the start of each pipeline run.
+_metrics = {
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+}
+
+
+def reset_metrics() -> None:
+    for k in _metrics:
+        _metrics[k] = 0
+
+
+def get_metrics() -> dict:
+    est_cost = _metrics["input_tokens"] * _PRICE_IN + _metrics["output_tokens"] * _PRICE_OUT
+    total = _metrics["cache_hits"] + _metrics["cache_misses"]
+    hit_rate = (_metrics["cache_hits"] / total) if total else 0.0
+    return {**_metrics, "est_cost_usd": round(est_cost, 4), "hit_rate": round(hit_rate, 3)}
+
 SYSTEM = """You write Inshorts-style news summaries.
 
 Return JSON with exactly two fields:
@@ -47,9 +71,11 @@ def _extract_json(text: str) -> dict:
 def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_busting: bool = False) -> Summary:
     tone_str = str(tone) if tone else "Standard"
     cached_data = get_cached_summary(article.url, tone_str, jargon_busting)
-    
+
     if cached_data:
+        _metrics["cache_hits"] += 1
         return Summary(**cached_data)
+    _metrics["cache_misses"] += 1
 
     content = (article.content or "")[: cfg.max_article_chars]
     prompt = f"Title: {article.title}\n\nArticle:\n{content}"
@@ -78,6 +104,11 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
                 time.sleep(delay)
                 continue
             raise
+
+    usage = getattr(response, "usage", None)
+    if usage is not None:
+        _metrics["input_tokens"] += getattr(usage, "input_tokens", 0) or 0
+        _metrics["output_tokens"] += getattr(usage, "output_tokens", 0) or 0
 
     text = "".join(block.text for block in response.content if block.type == "text").strip()
     data = _extract_json(text)

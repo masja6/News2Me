@@ -40,3 +40,19 @@ def unsubscribe_token(email: str) -> str:
 def verify_unsubscribe_token(email: str, token: str) -> bool:
     expected = unsubscribe_token(email)
     return pysecrets.compare_digest(expected, token)
+
+
+def create_session_token(email: str) -> str:
+    from itsdangerous import URLSafeSerializer
+    serializer = URLSafeSerializer(secrets.session_secret)
+    return serializer.dumps({"email": email})
+
+
+def verify_session_token(token: str) -> str | None:
+    from itsdangerous import URLSafeSerializer, BadSignature
+    serializer = URLSafeSerializer(secrets.session_secret)
+    try:
+        data = serializer.loads(token)
+        return data.get("email")
+    except BadSignature:
+        return None

@@ -26,6 +26,8 @@ class Secrets(BaseSettings):
     admin_password: str = ""
     unsubscribe_secret: str = ""
     alert_chat_id: str = ""
+    google_client_id: str = ""
+    session_secret: str = "fallback-secret-for-dev-only-change-me"
 
     summary_model: str = "claude-haiku-4-5-20251001"
     classify_model: str = "claude-haiku-4-5-20251001"

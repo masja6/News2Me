@@ -235,6 +235,34 @@ def log_click(email: str, category: str, url: str) -> None:
                 break
 
 
+def aggregate_clicks(limit_users: int = 200) -> dict:
+    """Summarize click data across all subscribers. Returns totals and per-category counts."""
+    subs = load_subscribers(include_unsubscribed=True)[:limit_users]
+    total_users = len(subs)
+    users_with_clicks = 0
+    category_totals: dict[str, int] = {}
+    top_users: list[dict] = []
+    for s in subs:
+        clicks = s.get("clicks", {}) or {}
+        if not clicks:
+            continue
+        users_with_clicks += 1
+        user_total = 0
+        for cat, n in clicks.items():
+            category_totals[cat] = category_totals.get(cat, 0) + int(n)
+            user_total += int(n)
+        top_users.append({"email": s.get("email", "?"), "total": user_total, "clicks": clicks})
+    top_users.sort(key=lambda x: x["total"], reverse=True)
+    grand_total = sum(category_totals.values())
+    return {
+        "total_users": total_users,
+        "users_with_clicks": users_with_clicks,
+        "grand_total": grand_total,
+        "category_totals": dict(sorted(category_totals.items(), key=lambda x: -x[1])),
+        "top_users": top_users[:10],
+    }
+
+
 def get_user_category_weights(email: str) -> dict[str, float]:
     """Returns category weights (boosts) based on click history."""
     db = _get_db()
@@ -301,3 +329,14 @@ def set_cached_summary(url: str, tone: str, jargon_busting: bool, summary_data: 
                 pass
         cache[cache_key] = summary_data
         cache_path.write_text(json.dumps(cache, indent=2))
+
+def get_cache_stats() -> dict:
+    """Returns total items in cache and estimated savings."""
+    db = _get_db()
+    if db is not False:
+        count = db.get_collection("summary_cache").estimated_document_count()
+        # Assume average 1500 tokens input, 200 output per saved call
+        # Haiku 4.5: $1.00/1M in, $5.00/1M out
+        saved_usd = count * (1500 * (1.00/1_000_000) + 200 * (5.00/1_000_000))
+        return {"total_items": count, "lifetime_savings_usd": round(saved_usd, 2)}
+    return {"total_items": 0, "lifetime_savings_usd": 0.0}

@@ -11,7 +11,7 @@ from .dedupe import filter_unseen, mark_seen
 from .fetch import fetch_all
 from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
-from .summarize import Summary, summarize
+from .summarize import Summary, summarize, reset_metrics, get_metrics
 from .db import save_delivery_log, get_user_category_weights, save_digest_archive
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
@@ -20,6 +20,7 @@ LAST_DIGEST_PATH = Path("data/last_digest.json")
 def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     cfg = load_config()
     log = print if verbose else (lambda *a, **k: None)
+    reset_metrics()
 
     log(f"Fetching {len(cfg.feeds)} feeds...")
     articles = fetch_all(cfg.feeds)
@@ -125,6 +126,7 @@ def _save_last_digest(summaries: list[Summary], report: QcReport | None) -> None
             "category_counts": report.category_counts if report else {},
             "ok": report.ok if report else True,
         },
+        "metrics": get_metrics(),
     }, indent=2))
 
 
