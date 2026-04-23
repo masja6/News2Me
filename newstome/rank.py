@@ -30,19 +30,27 @@ def _age_hours(a: Article) -> float:
         return 24.0
 
 
-def rank(clusters: list[list[Article]], w: Ranking) -> list[RankedCluster]:
+def rank(clusters: list[list[Article]], w: Ranking, category_boosts: dict[str, float] | None = None) -> list[RankedCluster]:
     ranked: list[RankedCluster] = []
+    boosts = category_boosts or {}
     for c in clusters:
         rep = max(c, key=lambda a: a.trust)
         age = min(_age_hours(a) for a in c)
         recency = math.exp(-age / 12.0)
         trust = max(a.trust for a in c)
         cluster_boost = min(1.0, math.log1p(len(c)) / math.log(4))
-        score = (
+        
+        base_score = (
             w.recency_weight * recency
             + w.trust_weight * trust
             + w.cluster_size_weight * cluster_boost
         )
+        
+        # Apply personalized boost
+        cat = rep.category
+        personal_boost = boosts.get(cat, 0.0)
+        score = base_score * (1.0 + personal_boost)
+
         ranked.append(RankedCluster(
             articles=c,
             score=score,

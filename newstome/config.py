@@ -20,6 +20,7 @@ class Secrets(BaseSettings):
     gmail_address: str = ""
     gmail_app_password: str = ""
     mongodb_uri: str = ""
+    app_url: str = "http://localhost:8000"
 
     summary_model: str = "claude-haiku-4-5-20251001"
     classify_model: str = "claude-haiku-4-5-20251001"

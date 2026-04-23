@@ -6,13 +6,13 @@ from pathlib import Path
 
 from .classify import classify_articles
 from .cluster import cluster, cluster_representative
-from .config import load_config
+from .config import load_config, secrets
 from .dedupe import filter_unseen, mark_seen
 from .fetch import fetch_all
 from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize
-from .db import save_delivery_log
+from .db import save_delivery_log, get_user_category_weights
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
@@ -54,6 +54,16 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     else:
         user_ranked = ranked
 
+    # Personalization: Re-rank based on user click history
+    email = user.get("email")
+    if email:
+        weights = get_user_category_weights(email)
+        if weights:
+            log(f"  Applying personalized boosts for {email}: {weights}")
+            # Extract clusters from RankedCluster objects to call rank() again
+            raw_clusters = [rc.articles for rc in user_ranked]
+            user_ranked = rank(raw_clusters, cfg.ranking, category_boosts=weights)
+
     max_items = user.get("max_items", cfg.ranking.max_items)
     tone = user.get("tone", "Standard")
     jargon = user.get("jargon_busting", False)
@@ -89,9 +99,8 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     if summaries:
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
-        if user.get("email"):
-            save_delivery_log(user["email"], summaries, tone)
     return summaries, report
+
 
 
 def build_digest(verbose: bool = True) -> tuple[list[Summary], QcReport | None]:

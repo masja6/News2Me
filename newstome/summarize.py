@@ -8,6 +8,8 @@ from anthropic import Anthropic
 
 from .config import Summarizer, secrets
 from .fetch import Article
+from .db import get_cached_summary, set_cached_summary
+import dataclasses
 
 _client = Anthropic(api_key=secrets.anthropic_api_key)
 
@@ -43,6 +45,12 @@ def _extract_json(text: str) -> dict:
 
 
 def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_busting: bool = False) -> Summary:
+    tone_str = str(tone) if tone else "Standard"
+    cached_data = get_cached_summary(article.url, tone_str, jargon_busting)
+    
+    if cached_data:
+        return Summary(**cached_data)
+
     content = (article.content or "")[: cfg.max_article_chars]
     prompt = f"Title: {article.title}\n\nArticle:\n{content}"
 
@@ -74,7 +82,7 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
     text = "".join(block.text for block in response.content if block.type == "text").strip()
     data = _extract_json(text)
 
-    return Summary(
+    summary = Summary(
         headline=str(data.get("headline", "")).strip().rstrip(".,;:"),
         body=_trim_body(str(data.get("body", "")).strip()),
         url=article.url,
@@ -82,6 +90,9 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
         category=article.category,
         date=article.published or "",
     )
+    
+    set_cached_summary(article.url, tone_str, jargon_busting, dataclasses.asdict(summary))
+    return summary
 
 
 def _trim_body(text: str, max_words: int = 40) -> str:

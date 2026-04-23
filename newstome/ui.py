@@ -14,7 +14,10 @@ from .email_send import send_email
 
 app = FastAPI(title="NewsToMe Admin")
 templates = Jinja2Templates(directory="templates")
-from .db import load_subscribers, save_subscriber, load_delivery_logs
+from .db import load_subscribers, save_subscriber, load_delivery_logs, log_click
+
+
+from .delivery import run_delivery_cycle
 
 
 _running = False
@@ -25,6 +28,14 @@ _running = False
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse(request, "onboard.html")
+
+
+@app.get("/r")
+async def track_redirect(url: str, cat: str, u: str):
+    """Tracks a click and redirects to the article."""
+    if u:
+        log_click(u, cat, url)
+    return RedirectResponse(url)
 
 
 @app.post("/subscribe")
@@ -131,32 +142,6 @@ async def admin_run(background: BackgroundTasks):
 def _do_run() -> None:
     global _running
     try:
-        cfg = load_config()
-        ranked = prepare_clusters(verbose=True)
-        if not ranked:
-            return
-            
-        title = cfg.telegram.digest_title
-        if "telegram" in cfg.delivery.channels:
-            summaries, _ = build_user_digest(ranked, {}, verbose=True)
-            if summaries:
-                tg_send(summaries, title=title)
-                
-        if "email" in cfg.delivery.channels and secrets.gmail_address and secrets.gmail_app_password:
-            subs = load_subscribers()
-            if cfg.delivery.email_to:
-                summaries, _ = build_user_digest(ranked, {}, verbose=True)
-                if summaries:
-                    send_email(summaries, title=title, to=cfg.delivery.email_to)
-            elif subs:
-                for sub in subs:
-                    print(f"  → Generating configured digest for {sub.get('email')}...")
-                    sub_sums, _ = build_user_digest(ranked, sub, verbose=True)
-                    if sub_sums:
-                        send_email(sub_sums, title=title, to=sub["email"])
-            else:
-                summaries, _ = build_user_digest(ranked, {}, verbose=True)
-                if summaries:
-                    send_email(summaries, title=title)
+        run_delivery_cycle(verbose=True)
     finally:
         _running = False

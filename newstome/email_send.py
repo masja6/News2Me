@@ -46,18 +46,27 @@ def _fmt_date(date_str: str) -> str:
         return date_str.split()[0:4][-1] if date_str else ""
 
 
-def _html_body(summaries: list[Summary], title: str) -> str:
+def _html_body(summaries: list[Summary], title: str, email: str | None = None) -> str:
     items = ""
+    base_url = secrets.app_url.rstrip("/")
     for s in summaries:
         label = CATEGORY_LABELS.get(s.category, s.category)
         date_chip = _fmt_date(s.date)
+        
+        # Tracking link
+        link = s.url
+        if email:
+            import urllib.parse
+            q = urllib.parse.urlencode({"url": s.url, "cat": s.category, "u": email})
+            link = f"{base_url}/r?{q}"
+
         items += f"""
         <tr>
           <td style="padding:16px 0;border-bottom:1px solid #eee;">
             <div style="font-size:11px;color:#888;margin-bottom:4px;">{label} &nbsp;·&nbsp; {s.source} &nbsp;·&nbsp; {date_chip}</div>
             <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px;line-height:1.3">{s.headline}</div>
             <div style="font-size:14px;color:#444;line-height:1.6;margin-bottom:8px">{s.body}</div>
-            <a href="{s.url}" style="font-size:12px;color:#1b4aef;text-decoration:none;">Read more →</a>
+            <a href="{link}" style="font-size:12px;color:#1b4aef;text-decoration:none;">Read more →</a>
           </td>
         </tr>"""
 
@@ -97,9 +106,9 @@ def _text_body(summaries: list[Summary], title: str) -> str:
     return "\n".join(lines)
 
 
-def send_email(summaries: list[Summary], title: str, to: str | list[str] | None = None) -> None:
+def send_email(summaries: list[Summary], title: str, to: str | list[str] | None = None) -> tuple[bool, str | None]:
     if not summaries:
-        return
+        return False, "No summaries to send"
 
     recipients = []
     if to:
@@ -115,16 +124,23 @@ def send_email(summaries: list[Summary], title: str, to: str | list[str] | None 
         if not recipients:
             recipients = [secrets.gmail_address]
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = title
-    msg["From"] = secrets.gmail_address
-    msg["To"] = "undisclosed-recipients:;"
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = title
+        msg["From"] = secrets.gmail_address
+        msg["To"] = "undisclosed-recipients:;"
 
-    msg.attach(MIMEText(_text_body(summaries, title), "plain"))
-    msg.attach(MIMEText(_html_body(summaries, title), "html"))
+        msg.attach(MIMEText(_text_body(summaries, title), "plain"))
+        
+        # Use the first recipient's email for tracking if it's a single-user send
+        tracking_email = recipients[0] if len(recipients) == 1 else None
+        msg.attach(MIMEText(_html_body(summaries, title, email=tracking_email), "html"))
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.login(secrets.gmail_address, secrets.gmail_app_password)
-        smtp.sendmail(secrets.gmail_address, recipients, msg.as_string())
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(secrets.gmail_address, secrets.gmail_app_password)
+            smtp.sendmail(secrets.gmail_address, recipients, msg.as_string())
+        return True, None
+    except Exception as e:
+        return False, str(e)
