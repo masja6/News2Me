@@ -3,53 +3,90 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ digest.title }} · {{ date_key }}</title>
-<meta property="og:title" content="{{ digest.title }} — {{ date_key }}">
-<meta property="og:description" content="{{ digest.summaries|length }} stories · NewsToMe">
-<meta name="twitter:card" content="summary">
+<title>Archive — NewsToMe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-         background: #f7f7f9; color: #111; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 80px; }
-  .header { padding: 24px; background: #111; color: #fff; border-radius: 16px; margin-bottom: 20px; }
-  .header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
-  .header .sub { color: #aaa; font-size: 13px; margin-top: 4px; }
-  .back { display: inline-block; margin-bottom: 16px; color: #666; font-size: 13px; text-decoration: none; }
-  .back:hover { color: #1b4aef; }
-  .card { background: #fff; border-radius: 16px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-  .story { padding: 18px 0; border-bottom: 1px solid #f0f0f0; }
-  .story:last-child { border-bottom: none; }
-  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 11px; color: #888; }
-  .cat { background: #e8eeff; color: #1b4aef; border-radius: 100px; padding: 2px 10px; font-weight: 700; }
-  .headline { font-size: 17px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
-  .body { font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 8px; }
-  .link { font-size: 13px; color: #1b4aef; text-decoration: none; font-weight: 600; }
-  .link:hover { text-decoration: underline; }
-  .footer { margin-top: 24px; text-align: center; color: #999; font-size: 12px; }
+  :root {
+    --blue: #1b4aef; --blue-light: #e8eeff;
+    --text: #111; --muted: #666; --bg: #f5f5f7; --white: #fff;
+    --border: #e1e1e6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Inter', -apple-system, sans-serif; 
+    background: var(--bg); color: var(--text); 
+    -webkit-font-smoothing: antialiased; line-height: 1.5;
+  }
+
+  .header {
+    background: #000; color: #fff;
+    height: 64px; display: flex; align-items: center; justify-content: center;
+    position: sticky; top: 0; z-index: 1000;
+  }
+  .header-inner { width: 100%; max-width: 1000px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.03em; text-decoration: none; color: #fff; }
+
+  .content { max-width: 1000px; margin: 0 auto; padding: 60px 24px; }
+  
+  .intro { margin-bottom: 48px; }
+  .title { font-family: 'Outfit', sans-serif; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 16px; }
+  .desc { font-size: 18px; color: var(--muted); max-width: 600px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+  
+  .digest-card { 
+    background: var(--white); border-radius: 20px; padding: 32px; 
+    text-decoration: none; color: inherit;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex; flex-direction: column;
+  }
+  .digest-card:hover { transform: translateY(-8px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); border-color: var(--blue-light); }
+  
+  .card-date { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue); margin-bottom: 12px; }
+  .card-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 16px; flex: 1; }
+  .view-link { font-size: 14px; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 6px; }
+
+  .empty { padding: 80px 0; text-align: center; color: var(--muted); }
+
+  @media (max-width: 600px) {
+    .title { font-size: 36px; }
+    .content { padding-top: 40px; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <a class="back" href="/d">← All digests</a>
-  <div class="header">
-    <h1>✦ {{ digest.title }}</h1>
-    <div class="sub">{{ date_key }} · {{ digest.summaries|length }} stories</div>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/" class="logo">✦ NewsToMe</a>
   </div>
-  <div class="card">
-    {% for s in digest.summaries %}
-    <div class="story">
-      <div class="meta">
-        <span class="cat">{{ s.category }}</span>
-        <span>{{ s.source }}</span>
-      </div>
-      <div class="headline">{{ s.headline }}</div>
-      <div class="body">{{ s.body }}</div>
-      <a class="link" href="{{ s.url }}" target="_blank" rel="noopener">Read the source →</a>
-    </div>
+</header>
+
+<main class="content">
+  <div class="intro">
+    <h1 class="title">News Archive</h1>
+    <p class="desc">Missed a day? Browse through our past morning editions and stay caught up with the essentials.</p>
+  </div>
+
+  {% if digests %}
+  <div class="grid">
+    {% for d in digests %}
+    <a href="/d/{{ d.date }}" class="digest-card">
+      <span class="card-date">{{ d.date }}</span>
+      <h2 class="card-title">{{ d.title }}</h2>
+      <span class="view-link">Read Edition →</span>
+    </a>
     {% endfor %}
   </div>
-  <div class="footer">NewsToMe · Powered by Shelby Co.</div>
-</div>
+  {% else %}
+  <div class="empty">
+    <p>The archive is currently empty. Our first edition will appear here soon!</p>
+  </div>
+  {% endif %}
+</main>
+
 </body>
 </html>

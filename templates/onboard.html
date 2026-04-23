@@ -3,596 +3,585 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NewsToMe — Setup</title>
+<title>NewsToMe — Get Started</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --blue: #1b4aef;
-    --blue-light: #e8eeff;
-    --text: #111;
-    --muted: #888;
-    --bg: #f7f7f9;
-    --white: #fff;
+    --ink: #0a0a0a;
+    --ink-2: #6b7280;
+    --ink-3: #9ca3af;
+    --surface: #ffffff;
+    --bg: #f9fafb;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent-dim: #bfdbfe;
+    --green: #059669;
+    --green-light: #ecfdf5;
+    --radius-sm: 8px;
     --radius: 14px;
+    --radius-lg: 20px;
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow: 0 4px 24px rgba(0,0,0,0.07);
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--text);
+    color: var(--ink);
+    padding: 20px 16px;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* Progress bar */
-  .progress {
+  /* ── Header ── */
+  .top-bar {
     position: fixed;
     top: 0; left: 0; right: 0;
-    height: 3px;
-    background: #e0e0e0;
-    z-index: 100;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: rgba(249,250,251,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 50;
+  }
+  .brand { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+  .step-label { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+
+  /* ── Progress ── */
+  .progress-track {
+    position: fixed;
+    top: 52px; left: 0; right: 0;
+    height: 2px;
+    background: var(--border);
+    z-index: 50;
   }
   .progress-fill {
     height: 100%;
-    background: var(--blue);
+    background: var(--accent);
     width: 0%;
     transition: width 0.5s var(--ease);
   }
 
-  /* Main card */
+  /* ── Card ── */
   .card {
-    background: var(--white);
-    border-radius: 24px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     width: 100%;
-    max-width: 560px;
-    padding: 56px 52px 48px;
+    max-width: 520px;
+    min-height: 480px;
     position: relative;
-    min-height: 440px;
     overflow: hidden;
+    margin-top: 60px;
   }
 
-  /* Steps */
+  /* ── Steps ── */
   .step {
     position: absolute;
-    inset: 56px 52px 48px;
+    inset: 0;
+    padding: 44px 40px 40px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     opacity: 0;
-    transform: translateY(48px);
+    transform: translateX(40px);
     pointer-events: none;
-    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+    transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
   }
-  .step.active {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: all;
-  }
-  .step.exit-up {
-    opacity: 0;
-    transform: translateY(-48px);
-    pointer-events: none;
-  }
-  .step.exit-down {
-    opacity: 0;
-    transform: translateY(48px);
-    pointer-events: none;
-  }
+  @media (max-width: 480px) { .step { padding: 36px 24px 32px; } }
+  .step.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+  .step.exit-left { opacity: 0; transform: translateX(-40px); pointer-events: none; }
+  .step.exit-right { opacity: 0; transform: translateX(40px); pointer-events: none; }
 
-  /* Typography */
-  .badge {
-    display: inline-block;
-    font-size: 12px;
+  /* ── Welcome step ── */
+  .eyebrow {
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--blue);
-    background: var(--blue-light);
-    border-radius: 100px;
-    padding: 4px 12px;
-    margin-bottom: 20px;
-    width: fit-content;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
   }
-  h1 {
-    font-size: 34px;
+  .headline {
+    font-size: clamp(26px, 5vw, 36px);
     font-weight: 800;
     line-height: 1.15;
-    letter-spacing: -0.02em;
-    color: var(--text);
-    margin-bottom: 12px;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
   }
   .sub {
-    font-size: 16px;
-    color: var(--muted);
-    line-height: 1.5;
-    margin-bottom: 32px;
-  }
-  .question {
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.3;
-    margin-bottom: 24px;
-    letter-spacing: -0.01em;
+    font-size: 15px;
+    color: var(--ink-2);
+    line-height: 1.6;
+    margin-bottom: 36px;
+    max-width: 380px;
   }
 
-  /* Inputs */
-  .input-wrap { position: relative; margin-bottom: 24px; }
+  /* ── Question ── */
+  .q {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    margin-bottom: 28px;
+  }
+  .q-sub {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-top: 6px;
+    font-weight: 400;
+  }
+
+  /* ── Inputs ── */
+  .field { margin-bottom: 20px; }
   input[type=text], input[type=email] {
     width: 100%;
     padding: 14px 16px;
-    font-size: 18px;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
+    font-size: 17px;
+    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
     outline: none;
+    background: var(--surface);
+    color: var(--ink);
     transition: border-color 0.2s, box-shadow 0.2s;
-    font-family: inherit;
-    color: var(--text);
-    background: var(--white);
   }
   input:focus {
-    border-color: var(--blue);
-    box-shadow: 0 0 0 4px rgba(27,74,239,0.08);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   }
-  input.shake {
-    animation: shake 0.4s ease;
-    border-color: #e53935;
-  }
+  input.error { border-color: #ef4444; animation: shake 0.35s ease; }
+  .field-hint { font-size: 12px; color: var(--ink-3); margin-top: 8px; padding-left: 2px; }
+
   @keyframes shake {
     0%,100% { transform: translateX(0); }
-    20%,60% { transform: translateX(-6px); }
-    40%,80% { transform: translateX(6px); }
-  }
-  .hint {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: -16px;
-    margin-bottom: 24px;
+    25%,75% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
   }
 
-  /* Buttons */
+  /* ── Buttons ── */
   .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--blue);
-    color: #fff;
-    border: none;
-    border-radius: 100px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 100px;
     padding: 14px 28px;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
     width: fit-content;
   }
-  .btn-primary:hover {
-    background: #1339cc;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(27,74,239,0.3);
-  }
-  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+  .btn-primary:active { transform: none; }
 
-  /* Back button */
   .btn-back {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: none;
-    border: 2px solid #e0e0e0;
-    border-radius: 100px;
-    padding: 8px 20px;
-    font-size: 14px;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: none;
+    background: none; border: none;
+    font-size: 14px; color: var(--ink-3); font-family: 'Inter', sans-serif;
+    cursor: pointer; padding: 6px 0;
+    display: flex; align-items: center; gap: 4px;
+    transition: color 0.15s;
+    margin-bottom: 24px;
   }
-  .btn-back:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-back:hover { color: var(--ink); }
 
-  /* Step counter */
-  .step-counter {
-    position: fixed;
-    top: 24px;
-    right: 32px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  /* Chips */
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 28px;
-  }
+  /* ── Chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
   .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px;
     border-radius: 100px;
-    border: 2px solid #e0e0e0;
-    background: var(--white);
-    font-size: 14px;
-    font-weight: 500;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;
     cursor: pointer;
     transition: all 0.18s var(--ease);
-    color: var(--text);
+    color: var(--ink-2);
     user-select: none;
   }
-  .chip:hover { border-color: var(--blue); color: var(--blue); }
-  .chip.selected {
-    background: var(--blue);
-    border-color: var(--blue);
-    color: #fff;
-    transform: scale(1.03);
+  .chip:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .chip.on {
+    background: var(--accent-light);
+    border-color: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 600;
   }
-  .chip .check { font-size: 11px; opacity: 0; transition: opacity 0.15s; }
-  .chip.selected .check { opacity: 1; }
+  .chip-emoji { font-size: 14px; }
 
-  /* Slider */
-  .slider-section { margin-bottom: 28px; }
-  .count-display {
-    font-size: 42px;
-    font-weight: 800;
-    color: var(--blue);
-    margin-bottom: 16px;
-    letter-spacing: -0.03em;
+  /* ── Slider ── */
+  .slider-val {
+    font-size: 52px; font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--accent);
+    margin-bottom: 4px;
+    line-height: 1;
   }
+  .slider-caption { font-size: 14px; color: var(--ink-2); margin-bottom: 20px; }
   input[type=range] {
     -webkit-appearance: none;
-    width: 100%;
-    height: 4px;
-    background: #e0e0e0;
-    border-radius: 2px;
-    outline: none;
+    width: 100%; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none;
+    margin-bottom: 8px;
   }
   input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--blue);
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(27,74,239,0.3);
+    -webkit-appearance: none; width: 24px; height: 24px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.35);
     transition: transform 0.15s;
   }
-  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-  .slider-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 8px;
-  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  .slider-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-3); margin-top: 4px; }
 
-  /* Done screen */
-  .checkmark-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: #e8f5e9;
-    margin-bottom: 24px;
+  /* ── Toggle row ── */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border-radius: var(--radius);
+    padding: 14px 16px; margin-top: 16px;
+    border: 1.5px solid var(--border);
+  }
+  .toggle-info h4 { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .toggle-info p { font-size: 12px; color: var(--ink-2); }
+
+  .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--border); border-radius: 100px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle input:checked + .toggle-track::after { transform: translateX(18px); }
+
+  /* ── Tone cards ── */
+  .tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 28px; }
+  .tone-card {
+    padding: 14px 14px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    cursor: pointer; transition: all 0.18s;
+    background: var(--surface);
+  }
+  .tone-card:hover { border-color: var(--accent-dim); }
+  .tone-card.on { border-color: var(--accent); background: var(--accent-light); }
+  .tone-card-icon { font-size: 20px; margin-bottom: 6px; }
+  .tone-card-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .tone-card-desc { font-size: 11px; color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
+  .tone-card.on .tone-card-name { color: var(--accent); }
+
+  /* ── Done screen ── */
+  .done-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--green-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 24px;
     animation: pop 0.5s var(--ease) forwards;
   }
   @keyframes pop {
     0% { transform: scale(0); opacity: 0; }
-    70% { transform: scale(1.15); opacity: 1; }
-    100% { transform: scale(1); }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
   }
-  .checkmark {
-    font-size: 32px;
-    color: #2e7d32;
-  }
-  .summary-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 12px 0 28px;
-  }
-  .summary-chip {
-    font-size: 12px;
-    background: var(--blue-light);
-    color: var(--blue);
-    border-radius: 100px;
+  .done-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 10px; }
+  .done-sub { font-size: 15px; color: var(--ink-2); line-height: 1.6; margin-bottom: 24px; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 32px; }
+  .tag {
+    font-size: 12px; font-weight: 500; color: var(--accent);
+    background: var(--accent-light); border-radius: 100px;
     padding: 4px 10px;
-    font-weight: 500;
   }
+  .tag.tone-tag { color: var(--green); background: var(--green-light); }
+  .tag.more-tag { color: var(--ink-2); background: var(--bg); }
 </style>
 </head>
 <body>
 
-<div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
-<div class="step-counter" id="step-counter"></div>
+<div class="top-bar">
+  <div class="brand">News<span>ToMe</span></div>
+  <div class="step-label" id="step-label"></div>
+</div>
+<div class="progress-track"><div class="progress-fill" id="prog"></div></div>
 
 <div class="card">
 
   <!-- Step 0: Welcome -->
-  <div class="step active" id="step-0">
-    <div class="badge">✦ NewsToMe</div>
-    <h1>Your Morning<br>Intelligence Brief.</h1>
-    <p class="sub">Personalised. Concise. Delivered to your inbox every day at 7 AM IST.</p>
-    <button class="btn-primary" onclick="goTo(1)">Get started <span>→</span></button>
+  <div class="step active" id="s0">
+    <div class="eyebrow">✦ NewsToMe by Shelby Co.</div>
+    <h1 class="headline">Your Morning<br>Intelligence Brief.</h1>
+    <p class="sub">Personalised news, in your tone, delivered to your inbox every day at 7 AM IST.</p>
+    <button class="btn-primary" onclick="next()">Get started <span>→</span></button>
   </div>
 
   <!-- Step 1: Name -->
-  <div class="step" id="step-1">
-    <p class="question">What should we call you?</p>
-    <div class="input-wrap">
-      <input type="text" id="name-input" placeholder="Your name" autocomplete="given-name">
+  <div class="step" id="s1">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q">What should we<br>call you?</p>
+    <div class="field">
+      <input type="text" id="inp-name" placeholder="Your first name" autocomplete="given-name">
     </div>
-    <button class="btn-primary" onclick="nextIfName()">Continue →</button>
+    <button class="btn-primary" onclick="stepName()">Continue →</button>
   </div>
 
   <!-- Step 2: Email -->
-  <div class="step" id="step-2">
-    <p class="question" id="email-q">Where should we send your digest?</p>
-    <div class="input-wrap">
-      <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email">
+  <div class="step" id="s2">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q" id="q-email">Where should we<br>send your digest?</p>
+    <div class="field">
+      <input type="email" id="inp-email" placeholder="you@email.com" autocomplete="email">
+      <p class="field-hint">📬 No spam, ever. Unsubscribe anytime.</p>
     </div>
-    <p class="hint">📬 Delivered every morning at 7 AM IST · No spam, ever</p>
-    <button class="btn-primary" onclick="nextIfEmail()">Continue →</button>
+    <button class="btn-primary" onclick="stepEmail()">Continue →</button>
   </div>
 
   <!-- Step 3: India topics -->
-  <div class="step" id="step-3">
-    <p class="question" id="india-q">Which India topics matter to you?</p>
-    <div class="chips" id="india-chips"></div>
-    <button class="btn-primary" onclick="goTo(4)">Continue →</button>
+  <div class="step" id="s3">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q" id="q-india">Which India topics<br>interest you?
+      <span class="q-sub">Select all that apply</span>
+    </p>
+    <div class="chips" id="chips-india"></div>
+    <button class="btn-primary" onclick="next()">Continue →</button>
   </div>
 
   <!-- Step 4: Global topics -->
-  <div class="step" id="step-4">
-    <p class="question">And from the global stage?</p>
-    <div class="chips" id="global-chips"></div>
-    <button class="btn-primary" onclick="goTo(5)">Continue →</button>
+  <div class="step" id="s4">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q">What about global<br>news?
+      <span class="q-sub">Select all that apply</span>
+    </p>
+    <div class="chips" id="chips-global"></div>
+    <button class="btn-primary" onclick="next()">Continue →</button>
   </div>
 
   <!-- Step 5: Tone -->
-  <div class="step" id="step-5">
-    <p class="question">What should your digest sound like?</p>
-    <div class="chips" id="tone-chips"></div>
-    <div class="input-wrap" id="other-tone-wrap" style="display:none; margin-top:10px;">
-      <input type="text" id="other-tone-input" placeholder="e.g. Speak like a Pirate">
+  <div class="step" id="s5">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q">How should your<br>digest read?</p>
+    <div class="tone-grid" id="tone-grid"></div>
+    <div class="field" id="custom-tone-wrap" style="display:none; margin-bottom:0; margin-top:-16px;">
+      <input type="text" id="inp-custom-tone" placeholder="e.g. Like a BBC anchor">
     </div>
-    <button class="btn-primary" onclick="goTo(6)">Continue →</button>
+    <button class="btn-primary" onclick="next()" style="margin-top:8px;">Continue →</button>
   </div>
 
-  <!-- Step 6: Count & Jargon -->
-  <div class="step" id="step-6">
-    <p class="question">How many stories per morning?</p>
-    <div class="slider-section">
-      <div class="count-display" id="count-display">10</div>
-      <input type="range" id="count-slider" min="5" max="15" value="10">
-      <div class="slider-labels"><span>5 stories</span><span>15 stories</span></div>
+  <!-- Step 6: Count + Jargon -->
+  <div class="step" id="s6">
+    <button class="btn-back" onclick="prev()">← Back</button>
+    <p class="q">How many stories<br>per morning?</p>
+    <div class="slider-val" id="slider-val">10</div>
+    <div class="slider-caption">stories per day</div>
+    <input type="range" id="slider" min="5" max="15" value="10">
+    <div class="slider-ends"><span>5</span><span>15</span></div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <h4>Smart Jargon Busting</h4>
+        <p>Adds definitions for complex terms</p>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="chk-jargon" checked>
+        <div class="toggle-track"></div>
+      </label>
     </div>
-    
-    <label style="display:flex; align-items:center; gap:10px; margin-bottom:28px; cursor:pointer;">
-      <input type="checkbox" id="jargon-check" checked style="width:20px; height:20px; accent-color:var(--blue);">
-      <span style="font-weight:600;">Enable Smart Jargon Busting</span>
-    </label>
-
-    <button class="btn-primary" id="finish-btn" onclick="submitOnboard()">Set up my digest →</button>
+    <button class="btn-primary" onclick="submit()" id="submit-btn" style="margin-top:24px;">Set up my digest →</button>
   </div>
 
   <!-- Step 7: Done -->
-  <div class="step" id="step-7">
-    <div class="checkmark-wrap"><span class="checkmark">✓</span></div>
-    <h1 id="done-title">You're all set!</h1>
-    <p class="sub" id="done-sub">Your Morning Digest arrives at 7 AM IST every day.</p>
-    <div class="summary-chips" id="summary-chips"></div>
-    <a href="/" class="btn-primary" onclick="window.location.reload(); return false;">Subscribe another email →</a>
+  <div class="step" id="s7">
+    <div class="done-icon">✓</div>
+    <h2 class="done-title" id="done-title">You're all set!</h2>
+    <p class="done-sub" id="done-sub">Your first digest is being prepared and will arrive shortly. Every morning at 7 AM IST after that.</p>
+    <div class="tag-list" id="done-tags"></div>
+    <button class="btn-primary" onclick="location.reload()">Subscribe another →</button>
   </div>
 
 </div>
 
-<button class="btn-back" id="back-btn" onclick="goBack()">← Back</button>
-
 <script>
-const TOTAL_STEPS = 7;
-let current = 0;
+const TOTAL = 7;
+let cur = 0;
 
 const INDIA = [
-  { v: 'india_politics',      l: 'Politics',        e: '🏛', d: true  },
-  { v: 'india_markets',       l: 'Markets',         e: '📈', d: true  },
-  { v: 'india_business',      l: 'Business',        e: '💼', d: false },
-  { v: 'india_policy',        l: 'Policy',          e: '📋', d: true  },
-  { v: 'india_geopolitics',   l: 'Geopolitics',     e: '🌏', d: true  },
-  { v: 'india_sports',        l: 'Sports',          e: '🏏', d: false },
-  { v: 'india_science',       l: 'Science & Health',e: '🔬', d: false },
-  { v: 'india_entertainment', l: 'Entertainment',   e: '🎬', d: false },
+  { v:'india_politics',      l:'Politics',        e:'🏛', on:true  },
+  { v:'india_markets',       l:'Markets',         e:'📈', on:true  },
+  { v:'india_business',      l:'Business',        e:'💼', on:false },
+  { v:'india_policy',        l:'Policy',          e:'📋', on:true  },
+  { v:'india_geopolitics',   l:'Geopolitics',     e:'🌏', on:true  },
+  { v:'india_sports',        l:'Sports',          e:'🏏', on:false },
+  { v:'india_science',       l:'Science & Health',e:'🔬', on:false },
+  { v:'india_entertainment', l:'Entertainment',   e:'🎬', on:false },
 ];
+
 const GLOBAL = [
-  { v: 'global_ai',       l: 'AI & ML',      e: '🤖', d: true  },
-  { v: 'global_bigtech',  l: 'Big Tech',     e: '💻', d: true  },
-  { v: 'global_startups', l: 'Startups',     e: '🚀', d: true  },
-  { v: 'global_security', l: 'Security',     e: '🔐', d: true  },
-  { v: 'global_oss',      l: 'Open Source',  e: '⚙️', d: false },
-  { v: 'global_hardware', l: 'Hardware',     e: '🖥',  d: false },
-  { v: 'global_policy',   l: 'Policy',       e: '🌐', d: false },
-  { v: 'global_space',    l: 'Global Space',  e: '🌌', d: false },
+  { v:'global_ai',       l:'AI & ML',      e:'🤖', on:true  },
+  { v:'global_bigtech',  l:'Big Tech',     e:'💻', on:true  },
+  { v:'global_startups', l:'Startups',     e:'🚀', on:true  },
+  { v:'global_security', l:'Security',     e:'🔐', on:false },
+  { v:'global_oss',      l:'Open Source',  e:'⚙️', on:false },
+  { v:'global_hardware', l:'Hardware',     e:'🖥',  on:false },
+  { v:'global_policy',   l:'Global Policy',e:'🌐', on:false },
+  { v:'global_space',    l:'Space',        e:'🌌', on:false },
 ];
 
 const TONES = [
-  { v: 'Standard', l: 'Standard', e: '📰', d: true },
-  { v: 'Explain Like I\'m 5', l: 'ELI5', e: '👶', d: false },
-  { v: 'Wall Street Analyst', l: 'Wall Street', e: '👔', d: false },
-  { v: 'Sarcastic', l: 'Sarcastic', e: '😏', d: false },
-  { v: 'Bullet Points', l: 'Bullet Points', e: '📝', d: false },
-  { v: 'Other', l: 'Other...', e: '✨', d: false },
+  { v:'Standard',            l:'Standard',        e:'📰', desc:'Clear & factual', on:true  },
+  { v:'Wall Street Analyst', l:'Wall Street',     e:'📊', desc:'Data-driven & precise', on:false },
+  { v:'Explain Like I\'m 5', l:'ELI5',            e:'🎓', desc:'Simple & accessible', on:false },
+  { v:'Sarcastic',           l:'Sarcastic',       e:'😏', desc:'Wit & dry humour', on:false },
+  { v:'Bullet Points',       l:'Bullets',         e:'•', desc:'Scannable lists', on:false },
+  { v:'Custom',              l:'Custom…',         e:'✏️', desc:'Your own style', on:false },
 ];
 
-function renderChips(containerId, chips) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = chips.map(c => `
-    <button type="button" class="chip ${c.d ? 'selected' : ''}" data-value="${c.v}" onclick="toggleChip(this)">
-      ${c.e} ${c.l} <span class="check">✓</span>
-    </button>`).join('');
+// Render chips
+function buildChips(id, arr) {
+  document.getElementById(id).innerHTML = arr.map((c,i) =>
+    `<button type="button" class="chip ${c.on?'on':''}" data-i="${i}" data-g="${id}" onclick="toggleChip(this,'${id}',${i})">
+      <span class="chip-emoji">${c.e}</span> ${c.l}
+    </button>`
+  ).join('');
 }
 
-function renderRadioChips(containerId, chips) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = chips.map(c => `
-    <button type="button" class="chip ${c.d ? 'selected' : ''}" data-value="${c.v}" onclick="toggleRadioChip(this, '${containerId}')">
-      ${c.e} ${c.l} <span class="check">✓</span>
-    </button>`).join('');
+function toggleChip(el, gid, i) {
+  const arr = gid === 'chips-india' ? INDIA : GLOBAL;
+  arr[i].on = !arr[i].on;
+  el.classList.toggle('on');
 }
 
-function toggleChip(el) {
-  el.classList.toggle('selected');
+// Render tone grid
+function buildTones() {
+  document.getElementById('tone-grid').innerHTML = TONES.map((t,i) =>
+    `<div class="tone-card ${t.on?'on':''}" onclick="pickTone(${i})">
+      <div class="tone-card-icon">${t.e}</div>
+      <div class="tone-card-name">${t.l}</div>
+      <div class="tone-card-desc">${t.desc}</div>
+    </div>`
+  ).join('');
 }
 
-function toggleRadioChip(el, containerId) {
-  document.querySelectorAll(`#${containerId} .chip`).forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  if (containerId === 'tone-chips') {
-    const isOther = el.dataset.value === 'Other';
-    document.getElementById('other-tone-wrap').style.display = isOther ? 'block' : 'none';
-    if (isOther) document.getElementById('other-tone-input').focus();
-  }
+function pickTone(i) {
+  TONES.forEach((t,j) => t.on = (j===i));
+  document.querySelectorAll('.tone-card').forEach((el,j) => el.classList.toggle('on', j===i));
+  document.getElementById('custom-tone-wrap').style.display = TONES[i].v === 'Custom' ? 'block' : 'none';
+  if (TONES[i].v === 'Custom') document.getElementById('inp-custom-tone').focus();
 }
 
-function getSelected(containerId) {
-  return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(el => el.dataset.value);
-}
-
-function getRadioSelected(containerId) {
-  const sel = document.querySelector(`#${containerId} .chip.selected`);
-  return sel ? sel.dataset.value : null;
-}
-
-function goTo(n) {
+// Step navigation
+function goTo(n, dir='forward') {
   const steps = document.querySelectorAll('.step');
-  const dir = n > current;
+  steps[cur].classList.remove('active');
+  steps[cur].classList.add(dir === 'forward' ? 'exit-left' : 'exit-right');
+  setTimeout(() => steps[cur].classList.remove('exit-left','exit-right'), 450);
 
-  steps[current].classList.remove('active');
-  steps[current].classList.add(dir ? 'exit-up' : 'exit-down');
-  setTimeout(() => steps[current].classList.remove('exit-up', 'exit-down'), 500);
-
-  current = n;
-
+  cur = n;
   setTimeout(() => {
-    steps[current].classList.add('active');
-    const inp = steps[current].querySelector('input[type=text],input[type=email]');
-    if (inp) inp.focus();
-  }, 60);
+    steps[cur].classList.add('active');
+    const inp = steps[cur].querySelector('input[type=text],input[type=email]');
+    if (inp && n > 0 && n < TOTAL) inp.focus();
+  }, 50);
 
-  const pct = (current / TOTAL_STEPS) * 100;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('back-btn').style.display = current > 0 && current < TOTAL_STEPS ? 'block' : 'none';
-  document.getElementById('step-counter').textContent = current > 0 && current < TOTAL_STEPS ? `${current} / ${TOTAL_STEPS - 1}` : '';
+  const pct = (cur / TOTAL) * 100;
+  document.getElementById('prog').style.width = pct + '%';
+  document.getElementById('step-label').textContent = cur > 0 && cur < TOTAL ? `Step ${cur} of ${TOTAL - 1}` : '';
 
-  // Dynamic labels
-  const name = document.getElementById('name-input').value.trim();
-  if (n === 2 && name) document.getElementById('email-q').textContent = `Nice to meet you, ${name}! Where should we send your digest?`;
-  if (n === 3 && name) document.getElementById('india-q').textContent = `${name}, which India topics matter to you?`;
+  // Dynamic copy
+  const name = (document.getElementById('inp-name').value||'').trim();
+  if (n === 2 && name) document.getElementById('q-email').innerHTML = `Hi ${name}! Where<br>should we send it?`;
+  if (n === 3 && name) document.getElementById('q-india').innerHTML = `Which India topics<br>interest you, ${name}?<span class="q-sub">Select all that apply</span>`;
 }
 
-function goBack() { if (current > 0) goTo(current - 1); }
+function next() { goTo(cur + 1, 'forward'); }
+function prev() { goTo(cur - 1, 'back'); }
 
-function shake(id) {
+// Validated steps
+function err(id) {
   const el = document.getElementById(id);
-  el.classList.add('shake');
+  el.classList.add('error');
   el.focus();
-  setTimeout(() => el.classList.remove('shake'), 500);
+  setTimeout(() => el.classList.remove('error'), 600);
 }
 
-function nextIfName() {
-  if (!document.getElementById('name-input').value.trim()) { shake('name-input'); return; }
-  goTo(2);
+function stepName() {
+  if (!document.getElementById('inp-name').value.trim()) { err('inp-name'); return; }
+  next();
+}
+function stepEmail() {
+  const v = document.getElementById('inp-email').value.trim();
+  if (!v || !v.includes('@') || !v.includes('.')) { err('inp-email'); return; }
+  next();
 }
 
-function nextIfEmail() {
-  const v = document.getElementById('email-input').value.trim();
-  if (!v || !v.includes('@') || !v.includes('.')) { shake('email-input'); return; }
-  goTo(3);
-}
+// Submit
+async function submit() {
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Setting up…'; btn.disabled = true;
 
-async function submitOnboard() {
-  const btn = document.getElementById('finish-btn');
-  btn.textContent = 'Setting up…';
-  btn.disabled = true;
-
-  const indiaSelected = getSelected('india-chips');
-  const globalSelected = getSelected('global-chips');
-  const maxItems = parseInt(document.getElementById('count-slider').value);
-  const toneBase = getRadioSelected('tone-chips');
-  const tone = toneBase === 'Other' ? document.getElementById('other-tone-input').value.trim() : toneBase;
-  const jargon = document.getElementById('jargon-check').checked;
-
-  let tz = 'Asia/Kolkata';
-  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch(e) {}
+  const selTone = TONES.find(t => t.on);
+  const tone = selTone?.v === 'Custom'
+    ? (document.getElementById('inp-custom-tone').value.trim() || 'Standard')
+    : (selTone?.v || 'Standard');
 
   const payload = {
-    name: document.getElementById('name-input').value.trim(),
-    email: document.getElementById('email-input').value.trim(),
-    india_categories: indiaSelected,
-    global_categories: globalSelected,
-    max_items: maxItems,
-    tone: tone || 'Standard',
-    jargon_busting: jargon,
-    tz: tz,
-    send_hour: 7,
+    name:              document.getElementById('inp-name').value.trim(),
+    email:             document.getElementById('inp-email').value.trim(),
+    india_categories:  INDIA.filter(x => x.on).map(x => x.v),
+    global_categories: GLOBAL.filter(x => x.on).map(x => x.v),
+    max_items:         parseInt(document.getElementById('slider').value),
+    tone,
+    jargon_busting:    document.getElementById('chk-jargon').checked,
   };
 
-  try {
-    await fetch('/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  } catch(e) { console.error(e); }
+  try { await fetch('/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); }
+  catch(e) { console.error(e); }
 
-  // Build summary chips
-  const allCats = [...indiaSelected, ...globalSelected];
-  const labels = Object.fromEntries([...INDIA,...GLOBAL].map(x => [x.v, `${x.e} ${x.l}`]));
-  
-  const MAX_DISPLAY = 6;
-  const displayCats = allCats.slice(0, MAX_DISPLAY);
-  const extraCount = allCats.length - MAX_DISPLAY;
-  
-  let chipsHtml = displayCats.map(c => `<span class="summary-chip">${labels[c] || c}</span>`).join('');
-  if (extraCount > 0) {
-    chipsHtml += `<span class="summary-chip" style="background:#f0f0f0;color:#666;font-weight:700;">+${extraCount} more</span>`;
-  }
-  chipsHtml += `<span class="summary-chip" style="background:var(--blue);color:#fff;">📰 ${maxItems} stories/day</span>`;
-  
-  document.getElementById('summary-chips').innerHTML = chipsHtml;
+  // Build tags
+  const allCats = [...INDIA.filter(x=>x.on),...GLOBAL.filter(x=>x.on)];
+  const MAX = 5;
+  const shown = allCats.slice(0, MAX);
+  const extra = allCats.length - MAX;
+  let tags = shown.map(c=>`<span class="tag">${c.e} ${c.l}</span>`).join('');
+  if (extra > 0) tags += `<span class="tag more-tag">+${extra} more</span>`;
+  tags += `<span class="tag tone-tag">✦ ${tone}</span>`;
+  document.getElementById('done-tags').innerHTML = tags;
 
-  const name = document.getElementById('name-input').value.trim();
+  const name = document.getElementById('inp-name').value.trim();
   document.getElementById('done-title').textContent = `You're all set, ${name}!`;
 
-  goTo(7);
+  goTo(7, 'forward');
 }
 
-// Slider live update
-const slider = document.getElementById('count-slider');
-slider.addEventListener('input', () => {
-  document.getElementById('count-display').textContent = slider.value;
+// Slider
+document.getElementById('slider').addEventListener('input', function() {
+  document.getElementById('slider-val').textContent = this.value;
 });
 
-// Enter key advances
+// Enter key
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  const step = document.querySelector('.step.active');
-  const btn = step.querySelector('.btn-primary');
+  const btn = document.querySelector('.step.active .btn-primary:not([disabled])');
   if (btn) btn.click();
 });
 
-// Init chips
-renderChips('india-chips', INDIA);
-renderChips('global-chips', GLOBAL);
-renderRadioChips('tone-chips', TONES);
+// Init
+buildChips('chips-india', INDIA);
+buildChips('chips-global', GLOBAL);
+buildTones();
 </script>
 </body>
 </html>

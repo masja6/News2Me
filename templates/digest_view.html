@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ digest.title }} — NewsToMe Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@800&family=Source+Serif+4:opsz,wght@8..60,400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1b4aef; --blue-light: #e8eeff;
+    --text: #111; --muted: #666; --bg: #fff; --border: #f2f2f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Inter', -apple-system, sans-serif; 
+    background: var(--bg); color: var(--text); 
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+  }
+
+  .header {
+    background: rgba(255,255,255,0.8); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: 64px; display: flex; align-items: center; justify-content: center;
+    position: sticky; top: 0; z-index: 1000;
+  }
+  .header-inner { width: 100%; max-width: 800px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.03em; text-decoration: none; color: #000; }
+  .back-link { font-size: 14px; font-weight: 600; color: var(--blue); text-decoration: none; }
+
+  .content { max-width: 700px; margin: 0 auto; padding: 60px 24px; }
+  
+  .digest-meta { margin-bottom: 40px; text-align: center; }
+  .date-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue); margin-bottom: 12px; display: block; }
+  .digest-title { font-family: 'Outfit', sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 24px; }
+
+  .story { margin-bottom: 64px; }
+  .story-tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: var(--blue-light); color: var(--blue); padding: 4px 10px; border-radius: 100px; display: inline-block; margin-bottom: 12px; }
+  .story-h { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.02em; }
+  .story-b { font-family: 'Source Serif 4', serif; font-size: 20px; color: #222; line-height: 1.6; margin-bottom: 20px; }
+  .story-footer { display: flex; align-items: center; gap: 12px; }
+  .story-source { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .story-link { font-size: 14px; font-weight: 800; color: var(--blue); text-decoration: none; border-bottom: 2px solid var(--blue-light); transition: all 0.2s; }
+  .story-link:hover { border-bottom-color: var(--blue); }
+
+  .footer { border-top: 1px solid var(--border); padding: 60px 24px; text-align: center; background: #f9f9fb; }
+  .footer-p { font-size: 15px; color: var(--muted); margin-bottom: 20px; }
+  .cta { display: inline-block; background: #000; color: #fff; padding: 12px 32px; border-radius: 100px; font-weight: 700; text-decoration: none; font-size: 15px; transition: transform 0.2s; }
+  .cta:hover { transform: scale(1.05); }
+
+  @media (max-width: 600px) {
+    .digest-title { font-size: 32px; }
+    .story-h { font-size: 24px; }
+    .story-b { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="/archive" class="logo">✦ NewsToMe</a>
+    <a href="/archive" class="back-link">← Archive</a>
+  </div>
+</header>
+
+<main class="content">
+  <div class="digest-meta">
+    <span class="date-label">{{ display_date }}</span>
+    <h1 class="digest-title">{{ digest.title }}</h1>
+  </div>
+
+  {% for s in digest.summaries %}
+  <article class="story">
+    <div class="story-tag">{{ s.category }}</div>
+    <h2 class="story-h">{{ s.headline }}</h2>
+    <p class="story-b">{{ s.body }}</p>
+    <div class="story-footer">
+      <span class="story-source">via {{ s.source }}</span>
+      <a class="story-link" href="{{ s.url }}" target="_blank">Read original source</a>
+    </div>
+  </article>
+  {% endfor %}
+</main>
+
+<footer class="footer">
+  <p class="footer-p">Stop doomscrolling. Get high-quality, non-sensational news in your inbox every morning at 7 AM.</p>
+  <a href="/" class="cta">Subscribe for Free</a>
+</footer>
+
+</body>
+</html>

@@ -3,291 +3,463 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NewsToMe — Admin</title>
+<title>NewsToMe — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --blue: #1b4aef; --blue-light: #e8eeff;
-    --text: #111; --muted: #666; --bg: #f7f7f9; --white: #fff;
-  }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Header */
-  .header {
-    background: #111; color: #fff;
-    padding: 0 16px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 60px; position: sticky; top: 0; z-index: 100;
-  }
-  @media (min-width: 768px) { .header { padding: 0 32px; } }
-  
-  .header-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .logo { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; white-space: nowrap; }
-  .user-pill {
-    background: rgba(255,255,255,0.12); border-radius: 100px;
-    padding: 2px 10px; font-size: 11px; color: #ccc; flex-shrink: 0;
-  }
-  .header-right { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-  
-  .btn { border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn-run { background: var(--blue); color: #fff; }
-  .btn-run:hover { background: #1339cc; }
-  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+:root {
+  --ink: #0a0a0a;
+  --ink-2: #6b7280;
+  --ink-3: #9ca3af;
+  --surface: #ffffff;
+  --bg: #f3f4f6;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --green: #059669;
+  --green-light: #ecfdf5;
+  --orange: #d97706;
+  --orange-light: #fffbeb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+}
 
-  /* Layout */
-  .main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 1fr; gap: 12px; }
-  @media (min-width: 768px) { 
-    .main { padding: 32px 24px; grid-template-columns: 1fr 1fr; gap: 20px; } 
-  }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* Cards */
-  .card { background: var(--white); border-radius: 16px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-  @media (min-width: 768px) { .card { padding: 24px; } }
-  .card-full { grid-column: 1 / -1; }
-  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 16px; }
+/* ── Header ── */
+.header {
+  background: var(--ink);
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  position: sticky; top: 0; z-index: 100;
+  gap: 16px;
+}
+.brand { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.02em; flex: 1; }
+.brand span { color: #60a5fa; }
+.header-status {
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  display: none;
+}
+@media (min-width: 640px) { .header-status { display: block; } }
 
-  /* Status banner */
-  .status-bar { grid-column: 1/-1; background: var(--white); border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); font-size: 14px; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
-  .status-dot.warn { background: #ff9800; }
-  .status-dot.running { background: var(--blue); animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+form.run-form { margin: 0; }
+.btn-run {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+.btn-run:hover { background: #1d4ed8; }
+.btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Lists */
-  .feed-item { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-  .feed-item:last-child { border-bottom: none; }
-  .feed-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
-  .feed-name { font-weight: 600; flex: 1; min-width: 140px; }
-  .feed-cat { font-size: 10px; background: var(--blue-light); color: var(--blue); border-radius: 100px; padding: 2px 8px; font-weight: 600; }
-  .feed-trust { font-size: 12px; color: var(--muted); margin-left: auto; }
+/* ── Nav tabs ── */
+.nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 24px; gap: 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+  padding: 14px 16px; font-size: 14px; font-weight: 500;
+  color: var(--ink-2); cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  font-family: 'Inter', sans-serif;
+}
+.nav-tab:hover { color: var(--ink); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
-  /* Ranking params */
-  .param-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-  .param-row:last-child { border-bottom: none; }
-  .param-val { font-weight: 700; color: var(--blue); }
+/* ── Layout ── */
+.main { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+@media (min-width: 768px) { .main { padding: 32px 24px; } }
 
-  /* QC */
-  .qc-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
-  .qc-pass { background: #e8f5e9; color: #2e7d32; }
-  .qc-fail { background: #fdecea; color: #c62828; }
-  .qc-issue { padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; color: #b76000; line-height: 1.4; }
-  .cat-bar { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
-  .cat-label { width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); flex-shrink: 0; }
-  @media (min-width: 600px) { .cat-label { width: 150px; } }
-  .cat-fill { height: 6px; border-radius: 3px; background: var(--blue); min-width: 4px; transition: width 0.4s; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
 
-  /* Digest list */
-  .story { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
-  .story:last-child { border-bottom: none; }
-  .story-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .story-cat { font-size: 10px; background: var(--blue-light); color: var(--blue); border-radius: 100px; padding: 2px 8px; font-weight: 700; }
-  .story-source { font-size: 12px; color: var(--muted); }
-  .story-headline { font-size: 16px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; color: #000; }
-  .story-body { font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 8px; }
-  .story-link { font-size: 13px; color: var(--blue); text-decoration: none; font-weight: 600; }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 680px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
 
-  /* Config editor */
-  .yaml-wrap { position: relative; }
-  textarea {
-    width: 100%; min-height: 380px;
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    font-size: 16px; /* 16px prevents iOS Safari auto-zoom */
-    padding: 16px; border: 1px solid #e0e0e0; border-radius: 12px;
-    resize: vertical; outline: none; line-height: 1.5;
-    transition: border-color 0.2s;
-    background: #fafafa;
-  }
-  @media (min-width: 768px) { textarea { font-size: 13px; } }
-  textarea:focus { border-color: var(--blue); background: #fff; }
-  .save-row { display: flex; gap: 8px; margin-top: 12px; }
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 20px 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+@media (min-width: 768px) { .card { padding: 24px; } }
+.card + .card { margin-top: 16px; }
+.card-full { grid-column: 1 / -1; }
 
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #111; color: #fff; padding: 12px 24px; border-radius: 100px;
-    font-size: 14px; z-index: 1000; opacity: 0; pointer-events: none;
-    transition: opacity 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-  .toast.show { opacity: 1; }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.card-title { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: 0; }
 
-  /* Delivery Logs */
-  .log-item { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
-  .log-item:last-child { border-bottom: none; }
-  .log-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
-  .log-email { font-size: 14px; font-weight: 700; color: var(--text); }
-  .log-time { color: var(--muted); font-size: 11px; margin-left: auto; }
-  .log-tone { font-size: 10px; background: #fff3e0; color: #e65100; border-radius: 4px; padding: 1px 6px; font-weight: 700; }
-  .log-stories { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  .log-story-dot { color: var(--blue); margin-right: 4px; font-weight: bold; }
+/* ── Status banner ── */
+.status-bar {
+  border-radius: 12px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; font-size: 14px;
+  background: var(--green-light); border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+.status-bar.running { background: var(--accent-light); border-color: #bfdbfe; color: #1e40af; }
+.status-bar.warn { background: var(--orange-light); border-color: #fcd34d; color: #92400e; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.status-dot.running { background: var(--accent); animation: blink 1.2s ease infinite; }
+.status-dot.warn { background: var(--orange); }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ── Stat boxes ── */
+.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (min-width: 640px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
+.stat { text-align: center; padding: 16px 8px; background: var(--bg); border-radius: 10px; }
+.stat-val { font-size: 28px; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+.stat-lbl { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+
+/* ── Rows ── */
+.row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.row:last-child { border-bottom: none; padding-bottom: 0; }
+.row:first-child { padding-top: 0; }
+.row-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.row-body { flex: 1; min-width: 0; }
+.row-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.row-sub { font-size: 12px; color: var(--ink-2); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-end { flex-shrink: 0; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 600; border-radius: 6px;
+  padding: 2px 8px; white-space: nowrap;
+}
+.badge-blue { background: var(--accent-light); color: var(--accent); }
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-orange { background: var(--orange-light); color: var(--orange); }
+.badge-gray { background: var(--bg); color: var(--ink-2); }
+
+/* ── Stories ── */
+.story { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.story:first-child { padding-top: 0; }
+.story:last-child { border-bottom: none; padding-bottom: 0; }
+.story-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.story-h { font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--ink); margin-bottom: 6px; }
+.story-b { font-size: 13px; color: var(--ink-2); line-height: 1.55; margin-bottom: 8px; }
+.story-link { font-size: 12px; color: var(--accent); font-weight: 600; text-decoration: none; }
+.story-link:hover { text-decoration: underline; }
+
+/* ── Bar charts ── */
+.bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
+.bar-lbl { font-size: 12px; color: var(--ink-2); width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 480px) { .bar-lbl { width: 130px; } }
+.bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.6s ease; }
+.bar-n { font-size: 12px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
+
+/* ── QC ── */
+.qc-issue { font-size: 13px; padding: 8px 0; border-top: 1px solid var(--border); color: var(--orange); line-height: 1.5; }
+
+/* ── Logs ── */
+.log { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.log:last-child { border-bottom: none; }
+.log-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.log-email { font-size: 13px; font-weight: 600; }
+.log-ts { font-size: 11px; color: var(--ink-3); margin-left: auto; }
+.log-stories { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+
+/* ── Config editor ── */
+.config-editor {
+  width: 100%;
+  min-height: 400px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 16px; /* prevent iOS Safari zoom */
+  line-height: 1.6;
+  padding: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  outline: none;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+@media (min-width: 768px) { .config-editor { font-size: 13px; } }
+.config-editor:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+.btn-save {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 10px 22px; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-top: 14px;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+.btn-save:hover { background: #1d4ed8; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: #fff;
+  padding: 12px 28px; border-radius: 100px;
+  font-size: 14px; font-weight: 500; z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: var(--shadow-md);
+  font-family: 'Inter', sans-serif;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 36px 20px; color: var(--ink-2); font-size: 14px; }
 </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
-  <div class="header-left">
-    <span class="logo">✦ NewsToMe</span>
-    <span class="user-pill">Admin</span>
-  </div>
-  <div class="header-right">
-    <form action="/admin/run" method="post" style="margin:0">
-      <button class="btn btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
-        {{ '⟳ Running…' if running else '▶ Run digest now' }}
-      </button>
-  </div>
+  <div class="brand">News<span>ToMe</span></div>
+  <span class="header-status">
+    {% if last_generated %}Last run: {{ last_generated }}{% else %}No runs yet{% endif %}
+  </span>
+  <form class="run-form" action="/admin/run" method="post">
+    <button class="btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
+      {{ '⟳ Running…' if running else '▶ Run Now' }}
+    </button>
+  </form>
 </div>
+
+<!-- Navigation -->
+<nav class="nav">
+  <button class="nav-tab active" data-tab="overview">Overview</button>
+  <button class="nav-tab" data-tab="subscribers">Subscribers</button>
+  <button class="nav-tab" data-tab="digest">Digest</button>
+  <button class="nav-tab" data-tab="logs">Delivery Logs</button>
+  <button class="nav-tab" data-tab="config">Config</button>
+</nav>
 
 <div class="main">
 
-  <!-- Status bar -->
-  <div class="status-bar">
-    <div class="status-dot {{ 'running' if running else ('warn' if not qc_ok else '') }}"></div>
-    <span>
-      {% if running %}Building digest — check Telegram / email when done.
-      {% elif last_generated %}Last digest: <b>{{ last_generated }}</b> · {{ story_count }} stories
-      {% else %}No digest generated yet. Click <b>Run digest now</b>.{% endif %}
-    </span>
-    {% if not qc_ok %}
-      <span style="margin-left:auto;font-size:12px;color:#b76000">⚠ QC issues detected</span>
-    {% endif %}
-  </div>
+  <!-- ── Overview ── -->
+  <div class="tab-pane active" id="tab-overview">
 
-  <!-- Feeds -->
-  <div class="card">
-    <div class="card-title">Active Feeds ({{ feeds|length }})</div>
-    {% for f in feeds %}
-    <div class="feed-item">
-      <div class="feed-dot"></div>
-      <span class="feed-name">{{ f.name }}</span>
-      <span class="feed-cat">{{ f.category }}</span>
-      <span class="feed-trust">{{ f.trust }}</span>
+    {% if running %}
+    <div class="status-bar running">
+      <div class="status-dot running"></div>
+      <span>Pipeline running — generating personalized digests now.</span>
     </div>
-    {% endfor %}
-  </div>
-
-  <!-- Subscribers -->
-  <div class="card">
-    <div class="card-title">Subscribers ({{ subscribers|length }})</div>
-    {% if subscribers %}
-      {% for sub in subscribers %}
-      <div class="feed-item">
-        <div class="feed-dot" style="background:var(--blue)"></div>
-        <span class="feed-name">{{ sub.name }}</span>
-        <span class="feed-trust" style="color:var(--text)">{{ sub.email }}</span>
-        <span class="feed-cat">{{ sub.max_items }} items</span>
-        <span class="feed-cat" style="background:#fff3e0;color:#e65100;">{{ sub.tone|default('Standard') }}</span>
-        {% if sub.jargon_busting %}<span class="feed-cat" style="background:#e8f5e9;color:#2e7d32;">Jargon On</span>{% endif %}
-      </div>
-      {% endfor %}
+    {% elif last_generated %}
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span>All good. Last digest sent on <b>{{ last_generated }}</b> · {{ story_count }} stories</span>
+    </div>
     {% else %}
-      <p style="font-size:13px;color:var(--muted)">No subscribers yet.</p>
+    <div class="status-bar warn">
+      <div class="status-dot warn"></div>
+      <span>No digest generated yet. Click <b>Run Now</b> to start.</span>
+    </div>
     {% endif %}
-  </div>
 
-  <!-- Ranking params -->
-  <div class="card">
-    <div class="card-title">Ranking Parameters</div>
-    {% for k, v in ranking.items() %}
-    <div class="param-row"><span>{{ k.replace('_', ' ') }}</span><span class="param-val">{{ v }}</span></div>
-    {% endfor %}
-  </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">{{ subscribers|length }}</div><div class="stat-lbl">Subscribers</div></div>
+      <div class="stat"><div class="stat-val">{{ story_count or 0 }}</div><div class="stat-lbl">Last Stories</div></div>
+      <div class="stat"><div class="stat-val">{{ feeds|length }}</div><div class="stat-lbl">Active Feeds</div></div>
+      <div class="stat"><div class="stat-val">{{ delivery_logs|length }}</div><div class="stat-lbl">Deliveries</div></div>
+    </div>
 
-  <!-- QC report -->
-  <div class="card">
-    <div class="card-title">QC Report</div>
-    {% if qc %}
-      <div style="margin-bottom:12px">
-        <span class="qc-badge {{ 'qc-pass' if qc_ok else 'qc-fail' }}">
-          {{ '✓ Pass' if qc_ok else '⚠ Issues' }}
-        </span>
+    <div class="grid-2">
+      <!-- Feeds -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Active Feeds</div>
+          <span class="badge badge-gray">{{ feeds|length }}</span>
+        </div>
+        {% for f in feeds %}
+        <div class="row">
+          <div class="row-dot"></div>
+          <div class="row-body">
+            <div class="row-name">{{ f.name }}</div>
+            <div class="row-sub">{{ f.category }}</div>
+          </div>
+          <span class="badge badge-gray">{{ f.trust }}</span>
+        </div>
+        {% endfor %}
       </div>
-      {% if category_counts %}
-        {% set max_count = category_counts.values()|max %}
-        {% for cat, n in category_counts.items()|sort(attribute='1', reverse=True) %}
-        <div class="cat-bar">
-          <span style="width:150px;font-size:12px;color:var(--muted)">{{ cat }}</span>
-          <div class="cat-fill" style="width:{{ (n / max_count * 120)|int }}px"></div>
-          <span style="font-size:12px;font-weight:700">{{ n }}</span>
+
+      <!-- Ranking -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Ranking Weights</div>
+        </div>
+        {% for k, v in ranking.items() %}
+        <div class="row">
+          <div class="row-body"><div class="row-name" style="text-transform:capitalize">{{ k.replace('_',' ') }}</div></div>
+          <b style="font-size:14px; color:var(--accent)">{{ v }}</b>
         </div>
         {% endfor %}
-      {% endif %}
-      {% if qc_issues %}
-        <div style="margin-top:12px">
-        {% for issue in qc_issues %}
-          <div class="qc-issue">{{ issue.severity|upper }} · {{ issue.message }}</div>
-        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Subscribers ── -->
+  <div class="tab-pane" id="tab-subscribers">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Subscribers</div>
+        <span class="badge badge-green">{{ subscribers|length }} active</span>
+      </div>
+      {% if subscribers %}
+        {% for sub in subscribers %}
+        <div class="row">
+          <div class="row-body">
+            <div class="row-name">{{ sub.name }}</div>
+            <div class="row-sub">{{ sub.email }} · {{ sub.max_items }} stories/day</div>
+          </div>
+          <div class="row-end">
+            <span class="badge badge-orange">{{ sub.tone|default('Standard') }}</span>
+            {% if sub.jargon_busting %}<span class="badge badge-blue">Jargon</span>{% endif %}
+          </div>
         </div>
+        {% endfor %}
       {% else %}
-        <p style="font-size:13px;color:#2e7d32;margin-top:12px">No issues found.</p>
+        <div class="empty">No subscribers yet.</div>
       {% endif %}
-    {% else %}
-      <p style="font-size:13px;color:var(--muted)">Run a digest to see QC results.</p>
-    {% endif %}
-  </div>
-
-  <!-- Delivery -->
-  <div class="card">
-    <div class="card-title">Delivery Channels</div>
-    {% for ch in channels %}
-    <div class="feed-item">
-      <div class="feed-dot"></div>
-      <span class="feed-name">{{ ch }}</span>
     </div>
-    {% endfor %}
-    {% if email_to %}
-    <p style="font-size:13px;color:var(--muted);margin-top:8px">Email → {{ email_to }}</p>
-    {% endif %}
   </div>
 
-  <!-- Recent Deliveries -->
-  <div class="card card-full">
-    <div class="card-title">Recent Deliveries (Last 20)</div>
-    {% if delivery_logs %}
-      {% for log in delivery_logs %}
-      <div class="log-item">
-        <div class="log-meta">
-          <span class="log-email">{{ log.email }}</span>
-          <span class="log-tone">{{ log.tone }}</span>
-          <span class="log-time">{{ log.timestamp.split('T')[0] }} {{ log.timestamp.split('T')[1][:5] }}</span>
+  <!-- ── Digest ── -->
+  <div class="tab-pane" id="tab-digest">
+    <div class="grid-2">
+      <!-- QC -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Quality Report</div>
+          {% if qc %}
+            <span class="badge {{ 'badge-green' if qc_ok else 'badge-orange' }}">
+              {{ '✓ Pass' if qc_ok else '⚠ Issues' }}
+            </span>
+          {% endif %}
         </div>
-        <div class="log-stories">
-          {% for story in log.stories %}
-            <span class="log-story-dot">•</span> {{ story.title }}{% if not loop.last %} &nbsp; {% endif %}
+        {% if qc %}
+          {% if category_counts %}
+            {% set max_n = category_counts.values()|max %}
+            {% for cat, n in category_counts.items()|sort(attribute='1', reverse=True) %}
+            <div class="bar-row">
+              <span class="bar-lbl">{{ cat }}</span>
+              <div class="bar-track"><div class="bar-fill" style="width:{{ (n/max_n*100)|int }}%"></div></div>
+              <span class="bar-n">{{ n }}</span>
+            </div>
+            {% endfor %}
+          {% endif %}
+          {% for issue in qc_issues %}
+            <div class="qc-issue">⚠ {{ issue.message }}</div>
           {% endfor %}
-        </div>
+          {% if not qc_issues %}
+            <p style="font-size:13px; color:var(--green); margin-top:12px;">No issues detected.</p>
+          {% endif %}
+        {% else %}
+          <div class="empty">Run a digest to see QC results.</div>
+        {% endif %}
       </div>
-      {% endfor %}
-    {% else %}
-      <p style="font-size:13px;color:var(--muted)">No delivery history available.</p>
-    {% endif %}
+
+      <!-- Delivery channels -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Delivery</div></div>
+        {% for ch in channels %}
+        <div class="row">
+          <div class="row-dot"></div>
+          <div class="row-body"><div class="row-name" style="text-transform:capitalize">{{ ch }}</div></div>
+        </div>
+        {% endfor %}
+        {% if email_to %}
+        <p style="font-size:12px; color:var(--ink-2); margin-top:12px;">Sending to: {{ email_to }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stories -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <div class="card-title">Last Digest Preview</div>
+        {% if summaries %}<span class="badge badge-gray">{{ summaries|length }} stories</span>{% endif %}
+      </div>
+      {% if summaries %}
+        {% for s in summaries %}
+        <div class="story">
+          <div class="story-meta">
+            <span class="badge badge-blue">{{ s.category }}</span>
+            <span style="font-size:12px; color:var(--ink-2)">{{ s.source }}</span>
+          </div>
+          <div class="story-h">{{ s.headline }}</div>
+          <div class="story-b">{{ s.body }}</div>
+          <a class="story-link" href="{{ s.url }}" target="_blank">Read full story →</a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No digest generated yet.</div>
+      {% endif %}
+    </div>
   </div>
 
-  <!-- Last digest -->
-  <div class="card card-full">
-    <div class="card-title">Last Digest</div>
-    {% if summaries %}
-      {% for s in summaries %}
-      <div class="story">
-        <div class="story-meta">
-          <span class="story-cat">{{ s.category }}</span>
-          <span class="story-source">{{ s.source }}</span>
-        </div>
-        <div class="story-headline">{{ s.headline }}</div>
-        <div class="story-body">{{ s.body }}</div>
-        <a class="story-link" href="{{ s.url }}" target="_blank">Read more →</a>
+  <!-- ── Delivery Logs ── -->
+  <div class="tab-pane" id="tab-logs">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Deliveries</div>
+        <span class="badge badge-gray">Last {{ delivery_logs|length }}</span>
       </div>
-      {% endfor %}
-    {% else %}
-      <p style="font-size:14px;color:var(--muted)">No digest yet.</p>
-    {% endif %}
+      {% if delivery_logs %}
+        {% for log in delivery_logs %}
+        <div class="log">
+          <div class="log-meta">
+            <span class="log-email">{{ log.email }}</span>
+            <span class="badge badge-orange">{{ log.tone }}</span>
+            <span class="log-ts">{{ log.timestamp.split('T')[0] }} {{ log.timestamp.split('T')[1][:5] }}</span>
+          </div>
+          <div class="log-stories">
+            {% for s in log.stories %}
+              <span style="color:var(--accent); font-weight:600;">·</span> {{ s.title }}{% if not loop.last %}<br>{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No deliveries recorded yet.</div>
+      {% endif %}
+    </div>
   </div>
 
-  <!-- Config editor -->
-  <div class="card card-full">
-    <div class="card-title">Edit config.yaml</div>
-    <div class="yaml-wrap">
+  <!-- ── Config ── -->
+  <div class="tab-pane" id="tab-config">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">config.yaml</div>
+        <span class="badge badge-gray">Live editor</span>
+      </div>
+      <p style="font-size:13px; color:var(--ink-2); margin-bottom:16px;">
+        Edit your RSS feeds, ranking weights, and delivery channels. Saved changes are applied on the next run.
+      </p>
       <form action="/admin/save" method="post">
-        <textarea name="yaml_text">{{ yaml_text }}</textarea>
-        <div class="save-row">
-          <button class="btn-save" type="submit">Save config</button>
+        <textarea class="config-editor" name="yaml_text">{{ yaml_text }}</textarea>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="btn-save" type="submit">Save Changes</button>
         </div>
       </form>
     </div>
@@ -298,13 +470,32 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// Show toast if URL has ?saved=1
+// Tab nav
+const tabs = document.querySelectorAll('.nav-tab');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    localStorage.setItem('nt_tab', tab.dataset.tab);
+  });
+});
+
+// Restore tab
+const saved = localStorage.getItem('nt_tab');
+if (saved) {
+  const t = document.querySelector(`[data-tab="${saved}"]`);
+  if (t) t.click();
+}
+
+// Toast on save
 const p = new URLSearchParams(location.search);
 if (p.get('saved')) {
   const t = document.getElementById('toast');
-  t.textContent = '✓ Config saved';
+  t.textContent = '✓ Configuration saved';
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 2500);
   history.replaceState({}, '', '/admin');
 }
 </script>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewsToMe — Your Personalised Morning Brief</title>
+<meta name="description" content="AI-curated news in your tone, delivered at 7 AM every morning. No clickbait, no noise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0a0a0a;
+  --ink-2: #6b7280;
+  --surface: #ffffff;
+  --bg: #f9fafb;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+}
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.logo { font-size: 15px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; margin-bottom: 48px; }
+
+.headline {
+  font-size: clamp(32px, 7vw, 54px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-align: center;
+  margin-bottom: 16px;
+  max-width: 520px;
+}
+
+.sub {
+  font-size: 17px;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 48px;
+  max-width: 400px;
+}
+
+.perks {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center;
+  margin-bottom: 48px;
+}
+.perk {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 7px 14px;
+}
+
+.auth-box {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  border: 1px solid var(--border);
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+}
+.auth-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: var(--ink-2); margin-bottom: 24px; line-height: 1.5; }
+
+#g_id_onload { display: none; }
+
+.g_id_signin { display: flex; justify-content: center; }
+
+.footer { margin-top: 40px; font-size: 12px; color: var(--ink-2); text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="logo">✦ NewsToMe</div>
+
+<h1 class="headline">Stop scrolling.<br>Start knowing.</h1>
+
+<p class="sub">AI-curated news personalised to your interests, delivered in your tone at 7 AM every day.</p>
+
+<div class="perks">
+  <div class="perk">🎯 Personalised to you</div>
+  <div class="perk">🤖 AI summarised</div>
+  <div class="perk">📬 Daily at 7 AM IST</div>
+  <div class="perk">✦ No noise</div>
+</div>
+
+<div class="auth-box">
+  <div class="auth-title">Get started in 2 minutes</div>
+  <div class="auth-sub">Sign in with Google to subscribe or update your preferences.</div>
+
+  <div id="g_id_onload"
+       data-client_id="{{ google_client_id }}"
+       data-context="signin"
+       data-ux_mode="popup"
+       data-callback="handleCredentialResponse"
+       data-auto_prompt="false">
+  </div>
+
+  <div class="g_id_signin"
+       data-type="standard"
+       data-shape="pill"
+       data-theme="outline"
+       data-text="continue_with"
+       data-size="large"
+       data-logo_alignment="left">
+  </div>
+</div>
+
+<p class="footer">By Shelby Co. · No spam, ever. Unsubscribe anytime.</p>
+
+<script>
+  function handleCredentialResponse(response) {
+    fetch('/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) window.location.href = data.redirect;
+      else alert('Sign in failed: ' + data.error);
+    });
+  }
+</script>
+
+</body>
+</html>
