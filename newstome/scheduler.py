@@ -5,6 +5,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from .delivery import run_delivery_cycle
+from .alerts import alert
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,6 +19,7 @@ def job_daily_digest():
         logger.info("✅ Scheduled job completed successfully.")
     except Exception as e:
         logger.error(f"❌ Scheduled job failed: {e}", exc_info=True)
+        alert("Daily digest job failed", detail=f"{type(e).__name__}: {e}", exc=e)
 
 def start_scheduler():
     """Initializes and starts the blocking scheduler."""

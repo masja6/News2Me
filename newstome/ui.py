@@ -3,18 +3,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
-from fastapi import BackgroundTasks, FastAPI, Form, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from .config import CONFIG_PATH, load_config, save_config, secrets
 from .pipeline import build_digest, build_user_digest, load_last_digest, prepare_clusters
 from .telegram import send_digest as tg_send
 from .email_send import send_email
+from .auth import require_admin, verify_unsubscribe_token
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="NewsToMe Admin")
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+def _ratelimit_handler(request: Request, exc: RateLimitExceeded):
+    return HTMLResponse("Too many requests. Please try again in a moment.", status_code=429)
+
+
 templates = Jinja2Templates(directory="templates")
-from .db import load_subscribers, save_subscriber, load_delivery_logs, log_click
+from .db import load_subscribers, save_subscriber, load_delivery_logs, log_click, set_unsubscribed
 
 
 from .delivery import run_delivery_cycle
@@ -31,14 +44,37 @@ def index(request: Request):
 
 
 @app.get("/r")
-async def track_redirect(url: str, cat: str, u: str):
+@limiter.limit("60/minute")
+async def track_redirect(request: Request, url: str, cat: str, u: str):
     """Tracks a click and redirects to the article."""
     if u:
         log_click(u, cat, url)
     return RedirectResponse(url)
 
 
+@app.get("/unsubscribe", response_class=HTMLResponse)
+async def unsubscribe(u: str, t: str):
+    if not verify_unsubscribe_token(u, t):
+        return HTMLResponse(
+            "<h2>Invalid unsubscribe link</h2><p>This link is malformed or expired. "
+            "Please reply to any digest email and we'll remove you manually.</p>",
+            status_code=400,
+        )
+    found = set_unsubscribed(u)
+    if found:
+        msg = f"<h2>Unsubscribed</h2><p>{u} will no longer receive NewsToMe digests.</p>"
+    else:
+        msg = f"<h2>Not found</h2><p>{u} is not a current subscriber.</p>"
+    return HTMLResponse(
+        f"<!doctype html><html><body style='font-family:-apple-system,sans-serif;"
+        f"max-width:520px;margin:80px auto;padding:0 24px;color:#111'>{msg}"
+        f"<p style='color:#666;font-size:13px;margin-top:24px'>NewsToMe · Shelby Co.</p>"
+        f"</body></html>"
+    )
+
+
 @app.post("/subscribe")
+@limiter.limit("5/minute")
 async def subscribe(request: Request, background: BackgroundTasks):
     data = await request.json()
     data["setup_complete"] = True
@@ -76,7 +112,7 @@ def _send_welcome_digest(user: dict) -> None:
 
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin(request: Request):
+def admin(request: Request, _: str = Depends(require_admin)):
     subscribers = load_subscribers()
     cfg = load_config()
     last = load_last_digest()
@@ -120,7 +156,7 @@ def admin(request: Request):
 
 
 @app.post("/admin/save")
-def admin_save(yaml_text: str = Form(...)):
+def admin_save(yaml_text: str = Form(...), _: str = Depends(require_admin)):
     try:
         yaml.safe_load(yaml_text)
     except yaml.YAMLError as e:
@@ -130,7 +166,7 @@ def admin_save(yaml_text: str = Form(...)):
 
 
 @app.post("/admin/run")
-async def admin_run(background: BackgroundTasks):
+async def admin_run(background: BackgroundTasks, _: str = Depends(require_admin)):
     global _running
     if _running:
         return RedirectResponse("/admin", status_code=303)

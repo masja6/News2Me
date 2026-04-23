@@ -22,6 +22,7 @@ dependencies = [
     "pymongo>=4.6",
     "apscheduler>=3.10",
     "pytz>=2024.1",
+    "slowapi>=0.1.9",
 ]
 
 [build-system]

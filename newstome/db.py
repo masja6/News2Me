@@ -1,4 +1,6 @@
 import json
+import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from .config import secrets
@@ -6,31 +8,101 @@ from .config import secrets
 SUBSCRIBERS_PATH = Path("data/subscribers.json")
 LOGS_PATH = Path("data/delivery_logs.json")
 
+logger = logging.getLogger(__name__)
+
+_mongo_client = None
 _mongo_db = None
+_last_health_check = 0.0
+_HEALTH_CHECK_INTERVAL = 60.0  # seconds
+
+
+def _connect():
+    """Create a fresh Mongo client. Returns (client, db) or (None, None)."""
+    if not secrets.mongodb_uri:
+        return None, None
+    try:
+        from pymongo import MongoClient
+        client = MongoClient(secrets.mongodb_uri, serverSelectionTimeoutMS=3000)
+        client.admin.command("ping")
+        db = client.get_default_database("newstome")
+        logger.info("MongoDB connected.")
+        return client, db
+    except Exception as e:
+        logger.warning("MongoDB connect failed: %s — falling back to local JSON.", e)
+        try:
+            from .alerts import alert
+            alert("MongoDB unavailable — using local JSON fallback", detail=str(e))
+        except Exception:
+            pass
+        return None, None
+
 
 def _get_db():
-    global _mongo_db
-    if _mongo_db is not None:
+    """Return the active Mongo DB handle or False. Re-pings periodically so
+    a transient outage doesn't wedge the cached client for the process lifetime."""
+    global _mongo_client, _mongo_db, _last_health_check
+
+    if not secrets.mongodb_uri:
+        return False
+
+    now = time.monotonic()
+    if _mongo_db is not None and (now - _last_health_check) < _HEALTH_CHECK_INTERVAL:
         return _mongo_db
 
-    if secrets.mongodb_uri:
-        from pymongo import MongoClient
-        client = MongoClient(secrets.mongodb_uri)
-        _mongo_db = client.get_default_database("newstome")
-    else:
-        _mongo_db = False
-    
+    if _mongo_client is not None:
+        try:
+            _mongo_client.admin.command("ping")
+            _last_health_check = now
+            return _mongo_db
+        except Exception as e:
+            logger.warning("MongoDB ping failed: %s — reconnecting.", e)
+            try:
+                _mongo_client.close()
+            except Exception:
+                pass
+            _mongo_client = None
+            _mongo_db = None
+
+    client, db = _connect()
+    _mongo_client = client
+    _mongo_db = db if db is not None else False
+    _last_health_check = now
     return _mongo_db
 
 
-def load_subscribers() -> list[dict]:
+def load_subscribers(include_unsubscribed: bool = False) -> list[dict]:
     db = _get_db()
     if db is not False:
-        return list(db.get_collection("subscribers").find({}, {"_id": 0}))
+        q = {} if include_unsubscribed else {"unsubscribed": {"$ne": True}}
+        return list(db.get_collection("subscribers").find(q, {"_id": 0}))
     else:
         if not SUBSCRIBERS_PATH.exists():
             return []
-        return json.loads(SUBSCRIBERS_PATH.read_text())
+        subs = json.loads(SUBSCRIBERS_PATH.read_text())
+        if include_unsubscribed:
+            return subs
+        return [s for s in subs if not s.get("unsubscribed")]
+
+
+def set_unsubscribed(email: str) -> bool:
+    db = _get_db()
+    if db is not False:
+        r = db.get_collection("subscribers").update_one(
+            {"email": email}, {"$set": {"unsubscribed": True}}
+        )
+        return r.matched_count > 0
+    else:
+        if not SUBSCRIBERS_PATH.exists():
+            return False
+        subs = json.loads(SUBSCRIBERS_PATH.read_text())
+        found = False
+        for s in subs:
+            if s.get("email") == email:
+                s["unsubscribed"] = True
+                found = True
+        if found:
+            SUBSCRIBERS_PATH.write_text(json.dumps(subs, indent=2))
+        return found
 
 
 def save_subscriber(data: dict) -> None:

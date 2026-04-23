@@ -22,6 +22,11 @@ class Secrets(BaseSettings):
     mongodb_uri: str = ""
     app_url: str = "http://localhost:8000"
 
+    admin_user: str = "admin"
+    admin_password: str = ""
+    unsubscribe_secret: str = ""
+    alert_chat_id: str = ""
+
     summary_model: str = "claude-haiku-4-5-20251001"
     classify_model: str = "claude-haiku-4-5-20251001"
 

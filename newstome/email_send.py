@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 
 from .config import secrets
 from .summarize import Summary
+from .auth import unsubscribe_token
 
 SUBSCRIBERS_PATH = Path("data/subscribers.json")
 
@@ -44,6 +45,14 @@ def _fmt_date(date_str: str) -> str:
         return dt.strftime("%d %b")
     except:
         return date_str.split()[0:4][-1] if date_str else ""
+
+
+def _unsubscribe_url(base_url: str, email: str | None) -> str | None:
+    if not email:
+        return None
+    import urllib.parse
+    q = urllib.parse.urlencode({"u": email, "t": unsubscribe_token(email)})
+    return f"{base_url}/unsubscribe?{q}"
 
 
 def _html_body(summaries: list[Summary], title: str, email: str | None = None) -> str:
@@ -90,6 +99,7 @@ def _html_body(summaries: list[Summary], title: str, email: str | None = None) -
         <tr>
           <td style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #eee;">
             <div style="font-size:11px;color:#aaa;">Delivered by NewsToMe · Powered by Shelby Co.</div>
+            {f'<div style="font-size:11px;color:#aaa;margin-top:4px;">Don\'t want these? <a href="{_unsubscribe_url(base_url, email)}" style="color:#888;text-decoration:underline;">Unsubscribe</a>.</div>' if email else ''}
           </td>
         </tr>
       </table>
@@ -99,10 +109,13 @@ def _html_body(summaries: list[Summary], title: str, email: str | None = None) -
 </html>"""
 
 
-def _text_body(summaries: list[Summary], title: str) -> str:
+def _text_body(summaries: list[Summary], title: str, email: str | None = None) -> str:
     lines = [title, "=" * len(title), ""]
     for i, s in enumerate(summaries, 1):
         lines += [f"{i}. {s.headline}", s.body, f"Source: {s.source}", f"Link: {s.url}", ""]
+    unsub = _unsubscribe_url(secrets.app_url.rstrip("/"), email)
+    if unsub:
+        lines += ["--", f"Unsubscribe: {unsub}"]
     return "\n".join(lines)
 
 
@@ -130,11 +143,16 @@ def send_email(summaries: list[Summary], title: str, to: str | list[str] | None 
         msg["From"] = secrets.gmail_address
         msg["To"] = "undisclosed-recipients:;"
 
-        msg.attach(MIMEText(_text_body(summaries, title), "plain"))
-        
         # Use the first recipient's email for tracking if it's a single-user send
         tracking_email = recipients[0] if len(recipients) == 1 else None
+        msg.attach(MIMEText(_text_body(summaries, title, email=tracking_email), "plain"))
         msg.attach(MIMEText(_html_body(summaries, title, email=tracking_email), "html"))
+
+        # RFC 8058 one-click unsubscribe header (Gmail/Outlook compliance)
+        if tracking_email:
+            unsub_url = _unsubscribe_url(secrets.app_url.rstrip("/"), tracking_email)
+            msg["List-Unsubscribe"] = f"<{unsub_url}>"
+            msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
             smtp.ehlo()

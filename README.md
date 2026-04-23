@@ -437,18 +437,62 @@ uvicorn newstome.ui:app --reload
 
 ## Roadmap
 
-| Feature | Status |
-|---|---|
-| Core pipeline (fetch → classify → cluster → rank → summarise → deliver) | ✅ Done |
-| Telegram delivery | ✅ Done |
-| Gmail HTML newsletter | ✅ Done |
-| Admin UI + onboarding | ✅ Done |
-| QC report | ✅ Done |
-| URL deduplication (7-day TTL) | ✅ Done |
-| 7 AM IST scheduled delivery (APScheduler) | ✅ Done |
-| Per-user preferences + multi-user support | ✅ Done |
-| Cost Optimization (Summary Caching) | ✅ Done |
-| Oracle Cloud VPS deployment + systemd | 🔜 Planned |
-| Notion digest archive (MCP) | 🔜 Planned |
-| WhatsApp delivery (Meta Cloud API) | 🔜 Exploring |
-| Web Archive / Public Digest URLs | 🔜 Planned |
+### ✅ Done (through v0.7)
+- Core pipeline: fetch → classify → cluster → rank → summarise → QC → deliver
+- Telegram delivery + interactive `/digest` bot
+- Gmail HTML newsletter with per-user tone + jargon-busting
+- Admin UI + Typeform-style onboarding
+- QC report with category bar charts
+- URL deduplication (7-day TTL)
+- 7 AM IST scheduled delivery (APScheduler)
+- Per-user preferences + MongoDB persistence
+- Click tracking + personalization boost (`/r` redirect)
+- Summary caching (7-day TTL, >90% cost reduction)
+- Welcome digest on signup
+- Docker + docker-compose deployment
+- Pytest foundation (basic, cache, rank, delivery)
+
+### 🚨 P0 — Production hardening (next up)
+Before we can safely invite real users.
+
+| # | Item | Why |
+|---|---|---|
+| 1 | **Admin auth** | `/admin` is wide open — anyone with the URL can edit config, trigger runs, read subscriber list |
+| 2 | **Unsubscribe link in emails** | Legal requirement (CAN-SPAM / GDPR) before any outbound sends |
+| 3 | **Error alerts** | Scheduler currently fails silently — a broken 7 AM run produces zero user signal |
+| 4 | **MongoDB health check + fallback logging** | Cached client goes stale if Mongo drops mid-run |
+| 5 | **Rate-limit `/subscribe` and `/r`** | Open endpoints — trivially DoS-able or click-spammable |
+
+### 🔧 P1 — Feature gaps
+| # | Item | Why |
+|---|---|---|
+| 6 | Per-user timezone + send time | Scheduler is hardcoded 7 AM IST for everyone |
+| 7 | Bounce handling | Capture SMTP bounces, auto-disable dead addresses |
+| 8 | Concurrent feed fetching | `fetch_all()` is serial — slowest pipeline step |
+| 9 | Click-analytics dashboard | Click data is logged but not visualized |
+| 10 | Digest archive (public `/d/<date>` links) | Shareable digest pages |
+| 11 | Notion archive (MCP) | Searchable digest archive in Notion |
+
+### 🧪 P2 — Testing + observability
+| # | Item | Why |
+|---|---|---|
+| 12 | CI (GitHub Actions) | Run `pytest` on PR |
+| 13 | Integration test for full pipeline | Current tests mock each layer individually |
+| 14 | Metrics: tokens/cost per run | Track cache hit/miss + cumulative spend |
+| 15 | Wire up `scripts/test_variants.py` | A/B summarization tone experiments |
+
+### 🚀 P3 — Growth features
+| # | Item | Why |
+|---|---|---|
+| 16 | WhatsApp delivery (Meta Cloud API) | Third channel |
+| 17 | Topic following (keyword match) | Beyond category filters — follow "RBI", "OpenAI" etc. |
+| 18 | Digest preview before subscribe | Show sample digest during onboarding |
+| 19 | Multi-language summaries | Hindi/Tamil via tone field prompt injection |
+
+### 🏗️ P4 — Infra / scale (>100 users)
+| # | Item | Why |
+|---|---|---|
+| 20 | Oracle Cloud VPS + systemd | Move off localhost onto Always Free VM |
+| 21 | Split services (web/scheduler/bot/fetch-worker) | Separate containers behind Caddy/Traefik |
+| 22 | Centralized fetch cache | Run fetch+classify+cluster once/hour, not per delivery |
+| 23 | Queue for email sends | Gmail SMTP has ~500/day cap — switch to Resend/Postmark |
