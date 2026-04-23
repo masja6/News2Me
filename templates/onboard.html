@@ -530,6 +530,9 @@ async function submitOnboard() {
   const tone = toneBase === 'Other' ? document.getElementById('other-tone-input').value.trim() : toneBase;
   const jargon = document.getElementById('jargon-check').checked;
 
+  let tz = 'Asia/Kolkata';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch(e) {}
+
   const payload = {
     name: document.getElementById('name-input').value.trim(),
     email: document.getElementById('email-input').value.trim(),
@@ -538,6 +541,8 @@ async function submitOnboard() {
     max_items: maxItems,
     tone: tone || 'Standard',
     jargon_busting: jargon,
+    tz: tz,
+    send_hour: 7,
   };
 
   try {

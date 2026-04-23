@@ -12,7 +12,7 @@ from .fetch import fetch_all
 from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize
-from .db import save_delivery_log, get_user_category_weights
+from .db import save_delivery_log, get_user_category_weights, save_digest_archive
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
@@ -99,6 +99,12 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     if summaries:
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
+        # Archive under UTC date key so duplicate deliveries the same day
+        # overwrite (latest content wins) rather than fragmenting.
+        if not user.get("email"):
+            date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            save_digest_archive(date_key, [asdict(s) for s in summaries],
+                                title=cfg.telegram.digest_title)
     return summaries, report
 
 

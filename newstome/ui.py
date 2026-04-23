@@ -27,7 +27,15 @@ def _ratelimit_handler(request: Request, exc: RateLimitExceeded):
 
 
 templates = Jinja2Templates(directory="templates")
-from .db import load_subscribers, save_subscriber, load_delivery_logs, log_click, set_unsubscribed
+from .db import (
+    load_subscribers,
+    save_subscriber,
+    load_delivery_logs,
+    log_click,
+    set_unsubscribed,
+    load_digest_archive,
+    list_digest_archive,
+)
 
 
 from .delivery import run_delivery_cycle
@@ -50,6 +58,26 @@ async def track_redirect(request: Request, url: str, cat: str, u: str):
     if u:
         log_click(u, cat, url)
     return RedirectResponse(url)
+
+
+@app.get("/d", response_class=HTMLResponse)
+async def digest_index(request: Request):
+    archives = list_digest_archive(60)
+    return templates.TemplateResponse(request, "archive_index.html", {"archives": archives})
+
+
+@app.get("/d/{date_key}", response_class=HTMLResponse)
+async def digest_archive(request: Request, date_key: str):
+    digest = load_digest_archive(date_key)
+    if not digest:
+        return HTMLResponse(
+            f"<h2>No digest for {date_key}</h2>"
+            "<p><a href='/d'>See recent digests</a></p>",
+            status_code=404,
+        )
+    return templates.TemplateResponse(
+        request, "archive.html", {"digest": digest, "date_key": date_key}
+    )
 
 
 @app.get("/unsubscribe", response_class=HTMLResponse)

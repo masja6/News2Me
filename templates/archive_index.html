@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digest archive · NewsToMe</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #f7f7f9; color: #111; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 16px; padding: 6px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .row { display: flex; align-items: center; justify-content: space-between;
+         padding: 16px 0; border-bottom: 1px solid #f0f0f0; text-decoration: none; color: inherit; }
+  .row:last-child { border-bottom: none; }
+  .row:hover .date { color: #1b4aef; }
+  .date { font-size: 15px; font-weight: 700; }
+  .meta { color: #999; font-size: 12px; }
+  .empty { padding: 24px; color: #888; font-size: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>✦ NewsToMe archive</h1>
+  <div class="sub">Every daily digest we've sent, as a shareable page.</div>
+  <div class="card">
+    {% if archives %}
+      {% for a in archives %}
+      <a class="row" href="/d/{{ a.date }}">
+        <span class="date">{{ a.date }}</span>
+        <span class="meta">{{ a.title }}</span>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No digests archived yet.</div>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

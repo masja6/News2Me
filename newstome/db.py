@@ -146,6 +146,63 @@ def save_delivery_log(user_email: str, summaries: list, tone: str, status: str =
         LOGS_PATH.write_text(json.dumps(logs[:100], indent=2))
 
 
+def save_digest_archive(date_key: str, summaries: list[dict], title: str) -> None:
+    """Persist a delivered digest so it can be rendered at /d/<date>."""
+    payload = {
+        "date": date_key,
+        "title": title,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summaries": summaries,
+    }
+    db = _get_db()
+    if db is not False:
+        db.get_collection("digests").update_one(
+            {"_id": date_key}, {"$set": payload}, upsert=True
+        )
+    else:
+        archive_dir = Path("data/archive")
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        (archive_dir / f"{date_key}.json").write_text(json.dumps(payload, indent=2))
+
+
+def load_digest_archive(date_key: str) -> dict | None:
+    db = _get_db()
+    if db is not False:
+        doc = db.get_collection("digests").find_one({"_id": date_key})
+        if doc:
+            doc.pop("_id", None)
+            return doc
+        return None
+    path = Path("data/archive") / f"{date_key}.json"
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
+def list_digest_archive(limit: int = 30) -> list[dict]:
+    db = _get_db()
+    if db is not False:
+        return list(
+            db.get_collection("digests")
+            .find({}, {"summaries": 0})
+            .sort("_id", -1)
+            .limit(limit)
+        )
+    archive_dir = Path("data/archive")
+    if not archive_dir.exists():
+        return []
+    files = sorted(archive_dir.glob("*.json"), reverse=True)[:limit]
+    out = []
+    for f in files:
+        try:
+            d = json.loads(f.read_text())
+            d.pop("summaries", None)
+            out.append(d)
+        except Exception:
+            continue
+    return out
+
+
 def load_delivery_logs(limit: int = 20) -> list[dict]:
     db = _get_db()
     if db is not False:
