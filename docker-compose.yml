@@ -23,3 +23,14 @@ services:
       - ./config.yaml:/app/config.yaml
     env_file:
       - .env
+
+  scheduler:
+    build: .
+    container_name: newstome-scheduler
+    restart: always
+    command: ["python", "run_scheduler.py"]
+    volumes:
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
+    env_file:
+      - .env
