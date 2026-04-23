@@ -9,6 +9,7 @@ from anthropic import Anthropic
 from .config import Summarizer, secrets
 from .fetch import Article
 from .db import get_cached_summary, set_cached_summary
+from . import observe
 import dataclasses
 
 _client = Anthropic(api_key=secrets.anthropic_api_key)
@@ -106,11 +107,23 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
             raise
 
     usage = getattr(response, "usage", None)
-    if usage is not None:
-        _metrics["input_tokens"] += getattr(usage, "input_tokens", 0) or 0
-        _metrics["output_tokens"] += getattr(usage, "output_tokens", 0) or 0
+    in_tok = getattr(usage, "input_tokens", 0) or 0 if usage else 0
+    out_tok = getattr(usage, "output_tokens", 0) or 0 if usage else 0
+    _metrics["input_tokens"] += in_tok
+    _metrics["output_tokens"] += out_tok
 
     text = "".join(block.text for block in response.content if block.type == "text").strip()
+
+    observe.log_generation(
+        name="summarize",
+        model=secrets.summary_model,
+        prompt=prompt,
+        completion=text,
+        input_tokens=in_tok,
+        output_tokens=out_tok,
+        metadata={"tone": tone_str, "jargon_busting": jargon_busting, "url": article.url},
+    )
+
     data = _extract_json(text)
 
     summary = Summary(

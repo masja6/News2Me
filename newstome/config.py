@@ -32,6 +32,10 @@ class Secrets(BaseSettings):
     summary_model: str = "claude-haiku-4-5-20251001"
     classify_model: str = "claude-haiku-4-5-20251001"
 
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+
 
 class Feed(BaseModel):
     name: str

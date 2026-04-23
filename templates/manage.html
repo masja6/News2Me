@@ -185,6 +185,13 @@ body {
           <span class="topic">🌐 {{ cat.split('_')[1] | capitalize }}</span>
         {% endfor %}
       </div>
+
+      {% if user.keywords %}
+      <div class="pref" style="margin-top:12px;">
+        <span class="pref-key">Following</span>
+        <span class="pref-val">{{ user.keywords | join(', ') }}</span>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Archive -->

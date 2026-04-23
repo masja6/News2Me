@@ -6,6 +6,7 @@ import anthropic
 from .config import secrets
 from .fetch import Article
 from .summarize import _client
+from . import observe
 
 CLASSIFY_SYSTEM = """You are a news classifier. For each article, assign exactly one category from the provided taxonomy.
 
@@ -34,17 +35,29 @@ def classify_articles(articles: list[Article], categories: list[str]) -> list[Ar
     user = f"Taxonomy: {', '.join(categories)}\n\nArticles:\n" + "\n".join(lines)
 
     try:
-        response = _client.messages.create(
-            model=secrets.classify_model,
-            max_tokens=2000,
-            system=CLASSIFY_SYSTEM,
-            messages=[{"role": "user", "content": user}],
-        )
+        with observe.span("classify", input=user, metadata={"article_count": len(articles)}):
+            response = _client.messages.create(
+                model=secrets.classify_model,
+                max_tokens=2000,
+                system=CLASSIFY_SYSTEM,
+                messages=[{"role": "user", "content": user}],
+            )
     except (anthropic.RateLimitError, anthropic.APIStatusError, Exception) as e:
         print(f"  classify failed ({e}); falling back to feed category")
         return articles
 
     text = "".join(block.text for block in response.content if block.type == "text").strip()
+    usage = getattr(response, "usage", None)
+    observe.log_generation(
+        name="classify",
+        model=secrets.classify_model,
+        prompt=user,
+        completion=text,
+        input_tokens=getattr(usage, "input_tokens", 0) or 0 if usage else 0,
+        output_tokens=getattr(usage, "output_tokens", 0) or 0 if usage else 0,
+        metadata={"article_count": len(articles)},
+    )
+
     try:
         items = _extract_json_array(text)
         mapping = {int(it["id"]): it["category"] for it in items}

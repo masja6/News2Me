@@ -13,6 +13,7 @@ from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize, reset_metrics, get_metrics
 from .db import save_delivery_log, get_user_category_weights, save_digest_archive
+from . import observe
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
@@ -21,6 +22,7 @@ def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     cfg = load_config()
     log = print if verbose else (lambda *a, **k: None)
     reset_metrics()
+    observe.start_trace("digest_run")
 
     log(f"Fetching {len(cfg.feeds)} feeds...")
     articles = fetch_all(cfg.feeds)
@@ -55,13 +57,23 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     else:
         user_ranked = ranked
 
+    # Keyword following: boost clusters matching subscriber keywords to top
+    keywords = [kw.strip().lower() for kw in user.get("keywords", []) if kw.strip()]
+    if keywords:
+        def _keyword_match(rc: RankedCluster) -> bool:
+            text = " ".join(a.title.lower() for a in rc.articles)
+            return any(kw in text for kw in keywords)
+        keyword_hits = [rc for rc in user_ranked if _keyword_match(rc)]
+        rest = [rc for rc in user_ranked if not _keyword_match(rc)]
+        user_ranked = keyword_hits + rest
+        log(f"  {len(keyword_hits)} keyword-matched clusters boosted to top ({keywords})")
+
     # Personalization: Re-rank based on user click history
     email = user.get("email")
     if email:
         weights = get_user_category_weights(email)
         if weights:
             log(f"  Applying personalized boosts for {email}: {weights}")
-            # Extract clusters from RankedCluster objects to call rank() again
             raw_clusters = [rc.articles for rc in user_ranked]
             user_ranked = rank(raw_clusters, cfg.ranking, category_boosts=weights)
 
@@ -100,12 +112,12 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     if summaries:
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
-        # Archive under UTC date key so duplicate deliveries the same day
-        # overwrite (latest content wins) rather than fragmenting.
         if not user.get("email"):
             date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             save_digest_archive(date_key, [asdict(s) for s in summaries],
                                 title=cfg.telegram.digest_title)
+
+    observe.end_trace()
     return summaries, report
 
 

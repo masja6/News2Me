@@ -23,6 +23,9 @@ dependencies = [
     "apscheduler>=3.10",
     "pytz>=2024.1",
     "slowapi>=0.1.9",
+    "langfuse>=2.0",
+    "deepeval>=1.0",
+    "google-auth>=2.0",
 ]
 
 [build-system]

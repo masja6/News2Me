@@ -400,6 +400,11 @@
         <div class="toggle-track"></div>
       </label>
     </div>
+    <div class="field" style="margin-top:20px;">
+      <label style="font-size:13px;font-weight:600;color:var(--ink);display:block;margin-bottom:6px;">Follow topics (optional)</label>
+      <input type="text" id="inp-keywords" placeholder="e.g. RBI, OpenAI, ISRO" style="width:100%;box-sizing:border-box;">
+      <p style="font-size:11px;color:var(--ink-2);margin-top:4px;">Comma-separated keywords — matching stories always appear first.</p>
+    </div>
     <button class="btn-primary" onclick="submit()" id="submit-btn" style="margin-top:24px;">Set up my digest →</button>
   </div>
 
@@ -545,6 +550,7 @@ async function submit() {
     max_items:         parseInt(document.getElementById('slider').value),
     tone,
     jargon_busting:    document.getElementById('chk-jargon').checked,
+    keywords:          document.getElementById('inp-keywords').value.split(',').map(s=>s.trim()).filter(Boolean),
   };
 
   try { await fetch('/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); }
