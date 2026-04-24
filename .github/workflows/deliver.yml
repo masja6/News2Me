@@ -18,10 +18,12 @@ jobs:
 
       - name: Trigger hourly delivery
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
             --max-time 90 \
             -X POST "${{ secrets.APP_URL }}/cron/deliver" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}")
+          echo "Full response: $RESPONSE"
+          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
           echo "Response status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Delivery trigger failed with status $STATUS"
