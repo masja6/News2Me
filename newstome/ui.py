@@ -312,6 +312,20 @@ def admin_save(yaml_text: str = Form(...), _: str = Depends(require_admin)):
     return RedirectResponse("/admin?saved=1", status_code=303)
 
 
+@app.post("/cron/deliver")
+async def cron_deliver(request: Request, background: BackgroundTasks):
+    """Called by GitHub Actions every hour. Protected by CRON_SECRET token."""
+    token = request.headers.get("X-Cron-Secret", "")
+    if not secrets.cron_secret or token != secrets.cron_secret:
+        return HTMLResponse("Unauthorized", status_code=401)
+    global _running
+    if _running:
+        return {"status": "already_running"}
+    _running = True
+    background.add_task(_do_run)
+    return {"status": "started"}
+
+
 @app.post("/admin/run")
 async def admin_run(background: BackgroundTasks, _: str = Depends(require_admin)):
     global _running
