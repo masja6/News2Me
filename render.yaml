@@ -1,0 +1,67 @@
+services:
+  # ── Web UI (Admin + subscriber endpoints) ───────────────────────────────────
+  - type: web
+    name: newstome-web
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn newstome.ui:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: UNSUBSCRIBE_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+
+  # ── Hourly cron — delivers to subscribers whose send_hour matches now ────────
+  # Runs at :00 of every hour UTC. Per-user timezone logic inside run_hourly_delivery()
+  # means each subscriber gets their digest at their own preferred local hour.
+  - type: cron
+    name: newstome-hourly-delivery
+    runtime: python
+    buildCommand: pip install -e .
+    schedule: "0 * * * *"   # every hour on the hour (UTC)
+    startCommand: python run_hourly.py
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: UNSUBSCRIBE_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
