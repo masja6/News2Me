@@ -12,9 +12,14 @@ jobs:
   deliver:
     runs-on: ubuntu-latest
     steps:
+      - name: Wake up Render (free tier cold start)
+        run: |
+          curl -s -o /dev/null --max-time 60 "${{ secrets.APP_URL }}/" || true
+
       - name: Trigger hourly delivery
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 90 \
             -X POST "${{ secrets.APP_URL }}/cron/deliver" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}")
           echo "Response status: $STATUS"
