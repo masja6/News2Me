@@ -133,11 +133,15 @@ body {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential: response.credential })
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) return res.text().then(t => { throw new Error('Server error ' + res.status + ': ' + t); });
+      return res.json();
+    })
     .then(data => {
       if (data.success) window.location.href = data.redirect;
       else alert('Sign in failed: ' + data.error);
-    });
+    })
+    .catch(err => alert('Sign in error: ' + err.message));
   }
 </script>
 
