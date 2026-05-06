@@ -1,6 +1,9 @@
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 import yaml
 from fastapi import BackgroundTasks, Depends, FastAPI, Form, Request
@@ -68,11 +71,10 @@ async def auth_google(request: Request):
         email = idinfo.get("email")
         if not email:
             return JSONResponse({"error": "No email in token"}, status_code=400)
-        
-        # Check if user exists
+
         subs = load_subscribers()
         is_existing = any(s.get("email") == email for s in subs)
-        
+
         session_token = create_session_token(email)
         response = JSONResponse({"success": True, "redirect": "/manage" if is_existing else "/onboard"})
         is_prod = secrets.app_url.startswith("https://")
@@ -80,6 +82,9 @@ async def auth_google(request: Request):
         return response
     except ValueError as e:
         return JSONResponse({"error": f"Invalid token: {e}"}, status_code=400)
+    except Exception as e:
+        logger.exception("Unexpected error in /auth/google")
+        return JSONResponse({"error": f"Server error: {e}"}, status_code=500)
 
 
 @app.get("/logout")
