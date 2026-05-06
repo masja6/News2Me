@@ -75,7 +75,8 @@ async def auth_google(request: Request):
         
         session_token = create_session_token(email)
         response = JSONResponse({"success": True, "redirect": "/manage" if is_existing else "/onboard"})
-        response.set_cookie(key="session", value=session_token, httponly=True, secure=True, samesite="lax", max_age=86400 * 30)
+        is_prod = secrets.app_url.startswith("https://")
+        response.set_cookie(key="session", value=session_token, httponly=True, secure=is_prod, samesite="lax", max_age=86400 * 30)
         return response
     except ValueError as e:
         return JSONResponse({"error": f"Invalid token: {e}"}, status_code=400)
