@@ -173,11 +173,16 @@ def manage(request: Request):
     if not user_data:
         # If somehow they have a session but no DB entry, redirect to onboard
         return RedirectResponse(url="/onboard")
-        
+
     from .auth import unsubscribe_token
     user_data["token"] = unsubscribe_token(user_email)
-        
-    return templates.TemplateResponse(request, "manage.html", {"user": user_data})
+
+    latest_digest = None
+    archives = list_digest_archive(limit=1)
+    if archives:
+        latest_digest = load_digest_archive(archives[0].get("_id") or archives[0].get("date"))
+
+    return templates.TemplateResponse(request, "manage.html", {"user": user_data, "latest": latest_digest})
 
 
 @app.post("/subscribe")
