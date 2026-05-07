@@ -17,7 +17,7 @@ from ..allowlists import load_libraries
 from ..fetch import Article
 
 _HEADERS = {"User-Agent": "NewsToMe/0.7 (+https://github.com/)"}
-_CONCURRENCY = 10
+_CONCURRENCY = 4
 _TRUST = 0.80
 
 _PYPI_RSS = "https://pypi.org/rss/project/{name}/releases.xml"

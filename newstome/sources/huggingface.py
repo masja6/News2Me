@@ -18,7 +18,7 @@ from ..fetch import Article
 _HEADERS = {"User-Agent": "NewsToMe/0.7 (+https://github.com/)"}
 _HF_API = "https://huggingface.co/api/models"
 _TRUST = 0.85
-_LIMIT = 100
+_LIMIT = 30
 
 _QUANT_SUFFIXES = re.compile(
     r"[-_](GGUF|GPTQ|AWQ|GGML|EXL2|fp16|bf16|int[48]|Q[2-8]_[A-Z0-9_]+)$",

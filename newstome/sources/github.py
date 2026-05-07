@@ -20,7 +20,7 @@ from ..fetch import Article
 
 _HEADERS = {"User-Agent": "NewsToMe/0.7 (+https://github.com/)"}
 _TRUST = 0.82
-_CONCURRENCY = 8
+_CONCURRENCY = 4
 
 _EXCLUDE_TOPICS = {"awesome", "dotfiles", "cheatsheet", "roadmap", "interview", "list"}
 
@@ -72,7 +72,7 @@ async def _search_trending(client: httpx.AsyncClient) -> list[dict]:
         if any(word in desc for word in ("awesome list", "curated list", "cheatsheet")):
             continue
         filtered.append(repo)
-    return filtered[:15]
+    return filtered[:10]
 
 
 def _repo_to_article(repo: dict) -> Article:
@@ -104,11 +104,13 @@ def _repo_to_article(repo: dict) -> Article:
 def fetch_github_releases(
     extra_repos: set[str] | None = None,
 ) -> list[Article]:
-    """Synchronous entry point for tracked-repo releases."""
-    suggested = {r.full_name for r in load_repos()}
-    repos = suggested
-    if extra_repos:
-        repos = repos | extra_repos
+    """Synchronous entry point for tracked-repo releases.
+
+    Only polls repos explicitly in extra_repos (user trackers). The suggested
+    list from popular_ai_repos.md is for onboarding UI only — polling all 35
+    on every tick would waste memory and API budget.
+    """
+    repos = extra_repos or set()
     if not repos:
         return []
     return asyncio.run(_fetch_releases(repos))

@@ -33,21 +33,27 @@ def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     articles = fetch_all(cfg.feeds)
     log(f"  {len(articles)} articles from RSS feeds")
 
-    ai_sources: list[tuple[str, callable]] = [
-        ("arXiv", fetch_arxiv),
-        ("blogs/Substack", fetch_blogs),
-        ("PyPI/npm", fetch_pypi_npm),
-        ("Hugging Face", fetch_huggingface),
-        ("GitHub trending", fetch_github_trending),
-        ("GitHub releases", fetch_github_releases),
-    ]
-    for source_name, fetcher in ai_sources:
-        try:
-            batch = fetcher()
-            log(f"  {len(batch)} from {source_name}")
-            articles.extend(batch)
-        except Exception as e:
-            log(f"  {source_name} failed: {e}")
+    ai = cfg.ai_sources
+    if ai.enabled:
+        ai_sources: list[tuple[str, bool, callable]] = [
+            ("arXiv", ai.arxiv, fetch_arxiv),
+            ("blogs/Substack", ai.blogs, fetch_blogs),
+            ("PyPI/npm", ai.pypi, fetch_pypi_npm),
+            ("Hugging Face", ai.huggingface, fetch_huggingface),
+            ("GitHub trending", ai.github_trending, fetch_github_trending),
+            ("GitHub releases", ai.github_releases, fetch_github_releases),
+        ]
+        for source_name, enabled, fetcher in ai_sources:
+            if not enabled:
+                continue
+            try:
+                batch = fetcher()
+                log(f"  {len(batch)} from {source_name}")
+                articles.extend(batch)
+            except Exception as e:
+                log(f"  {source_name} failed: {e}")
+    else:
+        log("  AI sources disabled")
 
     log(f"  {len(articles)} total articles fetched")
 

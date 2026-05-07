@@ -23,7 +23,7 @@ _ARXIV_FEED_URL = "https://export.arxiv.org/rss/{cat}"
 _ARXIV_ID_RE = re.compile(r"abs/(\d+\.\d+)")
 
 _TRUST = 0.85
-_PER_CATEGORY_LIMIT = 50
+_PER_CATEGORY_LIMIT = 10
 _REQUEST_DELAY = 3.0
 
 

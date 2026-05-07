@@ -7,18 +7,19 @@ content_type="essay". Applies per-publication rate caps and paywall detection.
 from __future__ import annotations
 
 import asyncio
+import re
 
 import feedparser
 import httpx
-import trafilatura
 
 from ..allowlists import load_publications
 from ..fetch import Article
 
 _HEADERS = {"User-Agent": "NewsToMe/0.7 (+https://github.com/)"}
-_CONCURRENCY = 6
-_PER_PUB_LIMIT = 3
+_CONCURRENCY = 4
+_PER_PUB_LIMIT = 1
 _MIN_CONTENT_WORDS = 400
+_MAX_CONTENT_CHARS = 8000
 
 _PUB_TRUST = {
     "anthropic": 0.95,
@@ -83,18 +84,13 @@ async def _fetch_pub(client, pub, limit, sem) -> list[Article]:
         else:
             raw_html = entry.get("summary", "")
 
-        content = ""
-        if raw_html:
-            extracted = trafilatura.extract(
-                raw_html,
-                include_comments=False,
-                include_tables=False,
-                favor_precision=True,
-            )
-            content = extracted or ""
+        content = re.sub(r"<[^>]+>", " ", raw_html).strip()
+        content = re.sub(r"\s+", " ", content)
 
         if not content:
             content = entry.get("summary", "")
+
+        content = content[:_MAX_CONTENT_CHARS]
 
         word_count = len(content.split())
         if word_count < _MIN_CONTENT_WORDS:

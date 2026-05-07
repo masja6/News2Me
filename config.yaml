@@ -93,3 +93,12 @@ delivery:
 
 telegram:
   digest_title: "Morning Digest"
+
+ai_sources:
+  enabled: true
+  arxiv: true
+  blogs: true
+  pypi: true
+  huggingface: true
+  github_trending: true
+  github_releases: true
