@@ -8,12 +8,17 @@ from .classify import classify_articles
 from .cluster import cluster, cluster_representative
 from .config import load_config, secrets
 from .dedupe import filter_unseen, mark_seen
-from .fetch import fetch_all
+from .fetch import Article, fetch_all
 from .qc import QcReport, check
 from .rank import RankedCluster, enforce_diversity, rank
 from .summarize import Summary, summarize, reset_metrics, get_metrics
-from .db import save_delivery_log, get_user_category_weights, save_digest_archive
+from .db import save_delivery_log, get_user_category_weights, save_digest_archive, get_tracked_ids
 from . import observe
+from .sources.arxiv import fetch_arxiv
+from .sources.blogs import fetch_blogs
+from .sources.pypi import fetch_pypi_npm
+from .sources.huggingface import fetch_huggingface
+from .sources.github import fetch_github_trending, fetch_github_releases
 
 LAST_DIGEST_PATH = Path("data/last_digest.json")
 
@@ -24,9 +29,27 @@ def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     reset_metrics()
     observe.start_trace("digest_run")
 
-    log(f"Fetching {len(cfg.feeds)} feeds...")
+    log(f"Fetching {len(cfg.feeds)} RSS feeds...")
     articles = fetch_all(cfg.feeds)
-    log(f"  {len(articles)} articles fetched")
+    log(f"  {len(articles)} articles from RSS feeds")
+
+    ai_sources: list[tuple[str, callable]] = [
+        ("arXiv", fetch_arxiv),
+        ("blogs/Substack", fetch_blogs),
+        ("PyPI/npm", fetch_pypi_npm),
+        ("Hugging Face", fetch_huggingface),
+        ("GitHub trending", fetch_github_trending),
+        ("GitHub releases", fetch_github_releases),
+    ]
+    for source_name, fetcher in ai_sources:
+        try:
+            batch = fetcher()
+            log(f"  {len(batch)} from {source_name}")
+            articles.extend(batch)
+        except Exception as e:
+            log(f"  {source_name} failed: {e}")
+
+    log(f"  {len(articles)} total articles fetched")
 
     unseen = set(filter_unseen([a.url for a in articles]))
     articles = [a for a in articles if a.url in unseen]
@@ -51,7 +74,11 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
     cfg = load_config()
     log = print if verbose else (lambda *a, **k: None)
 
-    user_cats = set(user.get("india_categories", []) + user.get("global_categories", []))
+    user_cats = set(
+        user.get("india_categories", [])
+        + user.get("global_categories", [])
+        + user.get("ai_categories", [])
+    )
     if user_cats:
         user_ranked = [rc for rc in ranked if rc.articles[0].category in user_cats]
     else:
@@ -68,14 +95,18 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
         user_ranked = keyword_hits + rest
         log(f"  {len(keyword_hits)} keyword-matched clusters boosted to top ({keywords})")
 
-    # Personalization: Re-rank based on user click history
+    # Personalization: Re-rank based on user click history + trackers
     email = user.get("email")
+    tracked_ids = get_tracked_ids(user)
     if email:
         weights = get_user_category_weights(email)
-        if weights:
+        if weights or tracked_ids:
             log(f"  Applying personalized boosts for {email}: {weights}")
             raw_clusters = [rc.articles for rc in user_ranked]
-            user_ranked = rank(raw_clusters, cfg.ranking, category_boosts=weights)
+            user_ranked = rank(raw_clusters, cfg.ranking, category_boosts=weights, tracked_ids=tracked_ids)
+    elif tracked_ids:
+        raw_clusters = [rc.articles for rc in user_ranked]
+        user_ranked = rank(raw_clusters, cfg.ranking, tracked_ids=tracked_ids)
 
     max_items = user.get("max_items", cfg.ranking.max_items)
     tone = user.get("tone", "Standard")
