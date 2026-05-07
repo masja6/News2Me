@@ -44,6 +44,8 @@
   .story-link { font-size: 14px; font-weight: 800; color: var(--blue); text-decoration: none; border-bottom: 2px solid var(--blue-light); transition: all 0.2s; }
   .story-link:hover { border-bottom-color: var(--blue); }
 
+  abbr { text-decoration: underline dotted var(--blue); cursor: help; font-style: normal; }
+
   .footer { border-top: 1px solid var(--border); padding: 60px 24px; text-align: center; background: #f9f9fb; }
   .footer-p { font-size: 15px; color: var(--muted); margin-bottom: 20px; }
   .cta { display: inline-block; background: #000; color: #fff; padding: 12px 32px; border-radius: 100px; font-weight: 700; text-decoration: none; font-size: 15px; transition: transform 0.2s; }
@@ -75,7 +77,7 @@
   <article class="story">
     <div class="story-tag">{{ s.category }}</div>
     <h2 class="story-h">{{ s.headline }}</h2>
-    <p class="story-b">{{ s.body }}</p>
+    <p class="story-b">{{ s.body | safe }}</p>
     <div class="story-footer">
       <span class="story-source">via {{ s.source }}</span>
       <a class="story-link" href="{{ s.url }}" target="_blank">Read original source</a>
