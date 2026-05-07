@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit Preferences — NewsToMe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0a0a0a; --ink-2: #6b7280; --ink-3: #9ca3af;
+  --surface: #ffffff; --bg: #f3f4f6; --border: #e5e7eb;
+  --accent: #2563eb; --accent-light: #eff6ff; --accent-dim: #bfdbfe;
+  --green: #059669; --green-light: #ecfdf5;
+  --radius: 16px;
+}
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); height: 58px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+.nav-inner { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+.brand { font-size: 16px; font-weight: 800; color: var(--accent); text-decoration: none; letter-spacing: -0.02em; }
+.nav-link { font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.nav-link:hover { color: var(--ink); }
+
+.page { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+.sub { font-size: 14px; color: var(--ink-2); margin-bottom: 28px; }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 24px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 16px; }
+
+.locked-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.locked-row:last-child { border-bottom: none; }
+.locked-key { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.locked-val { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.lock { font-size: 11px; color: var(--ink-3); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 13px; font-weight: 600; padding: 8px 14px; border: 1px solid var(--border); border-radius: 100px; background: #fff; color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
+.chip.on { background: var(--accent-light); border-color: var(--accent-dim); color: var(--accent); }
+.chip:hover { border-color: var(--accent-dim); }
+
+.tone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.tone-card { padding: 14px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.15s; background: #fff; }
+.tone-card.on { background: var(--accent-light); border-color: var(--accent); }
+.tone-card-icon { font-size: 22px; margin-bottom: 6px; }
+.tone-card-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+.tone-card-desc { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+
+input[type=text], input[type=email] { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 14px; background: #fff; }
+input[type=text]:focus, input[type=email]:focus { outline: none; border-color: var(--accent); }
+
+.row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.row:last-child { border-bottom: none; }
+.row-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+.row-hint { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.slider-val { font-size: 28px; font-weight: 800; color: var(--accent); }
+
+input[type=range] { width: 200px; }
+.toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border); border-radius: 24px; transition: 0.2s; }
+.toggle-track::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-track { background: var(--accent); }
+.toggle input:checked + .toggle-track::before { transform: translateX(20px); }
+
+.label { font-size: 13px; font-weight: 600; color: var(--ink); display: block; margin-bottom: 6px; }
+.hint { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
+
+.actions { display: flex; gap: 12px; margin-top: 24px; }
+.btn { font-size: 14px; font-weight: 600; border: none; border-radius: 100px; cursor: pointer; padding: 12px 24px; text-decoration: none; display: inline-flex; align-items: center; transition: all 0.15s; font-family: inherit; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-ghost { background: var(--bg); color: var(--ink-2); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--ink); }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 600; transition: transform 0.3s; z-index: 100; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/manage" class="brand">NewsToMe</a>
+    <a href="/manage" class="nav-link">← Back</a>
+  </div>
+</nav>
+
+<div class="page">
+  <h1>Edit Preferences</h1>
+  <p class="sub">Update your topics, tone, and frequency. Changes apply to tomorrow's digest.</p>
+
+  <div class="card">
+    <div class="card-title">Account</div>
+    <div class="locked-row">
+      <span class="locked-key">Name</span>
+      <span class="locked-val">{{ user.name }} <span class="lock">🔒</span></span>
+    </div>
+    <div class="locked-row">
+      <span class="locked-key">Email</span>
+      <span class="locked-val">{{ user.email }} <span class="lock">🔒</span></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🇮🇳 India topics</div>
+    <div class="chips" id="chips-india"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌐 Global topics</div>
+    <div class="chips" id="chips-global"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tone</div>
+    <div class="tone-grid" id="tone-grid"></div>
+    <div id="custom-tone-wrap" style="display:none; margin-top: 12px;">
+      <input type="text" id="inp-custom-tone" placeholder="e.g. Like a BBC anchor">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Delivery</div>
+    <div class="row">
+      <div>
+        <div class="row-label">Stories per day</div>
+        <div class="row-hint">Between 5 and 15</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input type="range" id="slider" min="5" max="15" value="{{ user.max_items or 10 }}">
+        <span class="slider-val" id="slider-val">{{ user.max_items or 10 }}</span>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Smart jargon busting</div>
+        <div class="row-hint">Adds definitions for complex terms</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="chk-jargon" {% if user.jargon_busting %}checked{% endif %}>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Keywords to follow</div>
+    <input type="text" id="inp-keywords" value="{{ user.keywords | join(', ') if user.keywords else '' }}" placeholder="e.g. RBI, OpenAI, ISRO">
+    <p class="hint">Comma-separated. Matching stories always appear first.</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="save()" id="save-btn">Save changes</button>
+    <a class="btn btn-ghost" href="/manage">Cancel</a>
+  </div>
+</div>
+
+<div class="toast" id="toast">Preferences saved ✓</div>
+
+<script>
+const USER = {{ user_json | safe }};
+
+const INDIA = [
+  { v:'india_politics',      l:'Politics',         e:'🏛' },
+  { v:'india_markets',       l:'Markets',          e:'📈' },
+  { v:'india_business',      l:'Business',         e:'💼' },
+  { v:'india_policy',        l:'Policy',           e:'📋' },
+  { v:'india_geopolitics',   l:'Geopolitics',      e:'🌏' },
+  { v:'india_sports',        l:'Sports',           e:'🏏' },
+  { v:'india_science',       l:'Science & Health', e:'🔬' },
+  { v:'india_entertainment', l:'Entertainment',    e:'🎬' },
+];
+const GLOBAL = [
+  { v:'global_ai',       l:'AI & ML',       e:'🤖' },
+  { v:'global_bigtech',  l:'Big Tech',      e:'💻' },
+  { v:'global_startups', l:'Startups',      e:'🚀' },
+  { v:'global_security', l:'Security',      e:'🔐' },
+  { v:'global_oss',      l:'Open Source',   e:'⚙️' },
+  { v:'global_hardware', l:'Hardware',      e:'🖥' },
+  { v:'global_policy',   l:'Global Policy', e:'🌐' },
+  { v:'global_space',    l:'Space',         e:'🌌' },
+];
+const TONES = [
+  { v:'Standard',            l:'Standard',    e:'📰', desc:'Clear & factual' },
+  { v:'Wall Street Analyst', l:'Wall Street', e:'📊', desc:'Data-driven' },
+  { v:"Explain Like I'm 5",  l:'ELI5',        e:'🎓', desc:'Simple' },
+  { v:'Sarcastic',           l:'Sarcastic',   e:'😏', desc:'Wit & humour' },
+  { v:'Bullet Points',       l:'Bullets',     e:'•',  desc:'Scannable' },
+  { v:'Custom',              l:'Custom…',    e:'✏️', desc:'Your own style' },
+];
+
+INDIA.forEach(c => c.on = (USER.india_categories || []).includes(c.v));
+GLOBAL.forEach(c => c.on = (USER.global_categories || []).includes(c.v));
+
+const userTone = USER.tone || 'Standard';
+const isPreset = TONES.some(t => t.v === userTone && t.v !== 'Custom');
+TONES.forEach(t => t.on = isPreset ? (t.v === userTone) : (t.v === 'Custom'));
+
+function buildChips(id, arr) {
+  document.getElementById(id).innerHTML = arr.map((c,i) =>
+    `<button type="button" class="chip ${c.on?'on':''}" onclick="toggleChip('${id}',${i},this)">
+      ${c.e} ${c.l}
+    </button>`
+  ).join('');
+}
+function toggleChip(gid, i, el) {
+  const arr = gid === 'chips-india' ? INDIA : GLOBAL;
+  arr[i].on = !arr[i].on;
+  el.classList.toggle('on');
+}
+function buildTones() {
+  document.getElementById('tone-grid').innerHTML = TONES.map((t,i) =>
+    `<div class="tone-card ${t.on?'on':''}" onclick="pickTone(${i})">
+      <div class="tone-card-icon">${t.e}</div>
+      <div class="tone-card-name">${t.l}</div>
+      <div class="tone-card-desc">${t.desc}</div>
+    </div>`
+  ).join('');
+  const customWrap = document.getElementById('custom-tone-wrap');
+  if (!isPreset) {
+    customWrap.style.display = 'block';
+    document.getElementById('inp-custom-tone').value = userTone;
+  }
+}
+function pickTone(i) {
+  TONES.forEach((t,j) => t.on = (j===i));
+  document.querySelectorAll('.tone-card').forEach((el,j) => el.classList.toggle('on', j===i));
+  document.getElementById('custom-tone-wrap').style.display = TONES[i].v === 'Custom' ? 'block' : 'none';
+}
+
+document.getElementById('slider').addEventListener('input', function() {
+  document.getElementById('slider-val').textContent = this.value;
+});
+
+async function save() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const selTone = TONES.find(t => t.on);
+  const tone = selTone?.v === 'Custom'
+    ? (document.getElementById('inp-custom-tone').value.trim() || 'Standard')
+    : (selTone?.v || 'Standard');
+
+  const payload = {
+    name:              USER.name,
+    india_categories:  INDIA.filter(x => x.on).map(x => x.v),
+    global_categories: GLOBAL.filter(x => x.on).map(x => x.v),
+    max_items:         parseInt(document.getElementById('slider').value),
+    tone,
+    jargon_busting:    document.getElementById('chk-jargon').checked,
+    keywords:          document.getElementById('inp-keywords').value.split(',').map(s=>s.trim()).filter(Boolean),
+  };
+  try {
+    const res = await fetch('/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (!res.ok) throw new Error('Save failed');
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => { window.location.href = '/manage'; }, 900);
+  } catch(e) {
+    alert('Failed to save: ' + e.message);
+    btn.textContent = 'Save changes'; btn.disabled = false;
+  }
+}
+
+buildChips('chips-india', INDIA);
+buildChips('chips-global', GLOBAL);
+buildTones();
+</script>
+</body>
+</html>

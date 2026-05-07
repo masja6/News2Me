@@ -162,6 +162,18 @@ def onboard(request: Request):
     return templates.TemplateResponse(request, "onboard.html", {"email": user_email})
 
 
+@app.get("/edit", response_class=HTMLResponse)
+def edit(request: Request):
+    user_email = get_current_user(request)
+    if not user_email:
+        return RedirectResponse(url="/")
+    subs = load_subscribers()
+    user_data = next((s for s in subs if s.get("email") == user_email), None)
+    if not user_data:
+        return RedirectResponse(url="/onboard")
+    return templates.TemplateResponse(request, "edit.html", {"user": user_data, "user_json": json.dumps(user_data)})
+
+
 @app.get("/manage", response_class=HTMLResponse)
 def manage(request: Request):
     user_email = get_current_user(request)
@@ -195,14 +207,20 @@ async def subscribe(request: Request, background: BackgroundTasks):
     data = await request.json()
     data["email"] = user_email
     data["setup_complete"] = True
-    
-    # Check if this is an update or a new sub
+
     subs = load_subscribers()
-    is_new = not any(s.get("email") == user_email for s in subs)
-    
+    existing = next((s for s in subs if s.get("email") == user_email), None)
+    is_new = existing is None
+
     if is_new:
         data["created_at"] = datetime.now(timezone.utc).isoformat()
-    
+    else:
+        # Preserve locked fields and original metadata on edit
+        data["name"] = existing.get("name", data.get("name", ""))
+        data["created_at"] = existing.get("created_at")
+        if "clicks" in existing:
+            data["clicks"] = existing["clicks"]
+
     save_subscriber(data)
     
     # Trigger first digest immediately if new
