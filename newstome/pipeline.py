@@ -47,7 +47,7 @@ def prepare_clusters(verbose: bool = True) -> list[RankedCluster]:
     return ranked
 
 
-def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = True) -> tuple[list[Summary], QcReport | None]:
+def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = True, date_key: str | None = None) -> tuple[list[Summary], QcReport | None]:
     cfg = load_config()
     log = print if verbose else (lambda *a, **k: None)
 
@@ -79,7 +79,7 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
 
     max_items = user.get("max_items", cfg.ranking.max_items)
     tone = user.get("tone", "Standard")
-    jargon = user.get("jargon_busting", False)
+    jargon = user.get("jargon_busting", True)
 
     selected = enforce_diversity(user_ranked, cfg.ranking.per_category_max, max_items, cfg.ranking.per_region_max)
     log(f"  {len(selected)} top clusters after diversity caps for {user.get('email', 'global')}")
@@ -113,8 +113,8 @@ def build_user_digest(ranked: list[RankedCluster], user: dict, verbose: bool = T
         mark_seen([s.url for s in summaries])
         _save_last_digest(summaries, report)
         if not user.get("email"):
-            date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            save_digest_archive(date_key, [asdict(s) for s in summaries],
+            dk = date_key or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            save_digest_archive(dk, [asdict(s) for s in summaries],
                                 title=cfg.telegram.digest_title)
 
     observe.end_trace()

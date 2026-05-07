@@ -365,6 +365,29 @@ async def admin_run(background: BackgroundTasks, _: str = Depends(require_admin)
     return RedirectResponse("/admin", status_code=303)
 
 
+@app.post("/admin/backfill")
+async def admin_backfill(background: BackgroundTasks, _: str = Depends(require_admin)):
+    """Run the digest pipeline for today and yesterday to seed the archive."""
+    background.add_task(_do_backfill)
+    return RedirectResponse("/admin?backfill=1", status_code=303)
+
+
+def _do_backfill() -> None:
+    from datetime import timedelta
+    from .db import save_digest_archive
+    from dataclasses import asdict
+    cfg = load_config()
+    today = datetime.now(timezone.utc)
+    for days_ago in [1, 0]:
+        date_key = (today - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+        try:
+            ranked = prepare_clusters(verbose=True)
+            summaries, _ = build_user_digest(ranked, {}, verbose=True, date_key=date_key)
+            print(f"Backfill {date_key}: {len(summaries)} stories saved")
+        except Exception as e:
+            print(f"Backfill {date_key} failed: {e}")
+
+
 def _do_run() -> None:
     global _running
     try:
