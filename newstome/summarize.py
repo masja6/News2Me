@@ -38,7 +38,7 @@ def get_metrics() -> dict:
     hit_rate = (_metrics["cache_hits"] / total) if total else 0.0
     return {**_metrics, "est_cost_usd": round(est_cost, 4), "hit_rate": round(hit_rate, 3)}
 
-SYSTEM = """You write Inshorts-style news summaries.
+SYSTEM_NEWS = """You write Inshorts-style news summaries.
 
 Return JSON with exactly two fields:
 - "headline": a COMPLETE 6-10 word headline. It must read as a finished phrase. No trailing punctuation. Never cut mid-word or mid-number.
@@ -50,6 +50,66 @@ Rules:
 - Lead with the fact. Skip filler like "In a recent development".
 - Output ONLY the JSON object. No preamble, no markdown fences."""
 
+SYSTEM_PAPER = """You summarize academic papers for ML practitioners.
+
+Return JSON with exactly two fields:
+- "headline": 8-12 words capturing the key contribution. No clickbait.
+- "body": 50-70 words structured as: Problem → Method → Result. Preserve model names, benchmark numbers, and percentage improvements exactly. If the paper introduces a named method or model, lead with it.
+
+Rules:
+- No emojis, no filler.
+- Preserve all numbers, metric names, and comparisons.
+- Output ONLY the JSON object. No preamble, no markdown fences."""
+
+SYSTEM_MODEL = """You summarize AI model releases for practitioners.
+
+Return JSON with exactly two fields:
+- "headline": The model name plus a one-line capability (8-12 words).
+- "body": 30-50 words. Always state: releasing org, parameter count if known, license, primary task, and what it outperforms (if any).
+
+Rules:
+- Preserve exact benchmark numbers and comparisons.
+- Output ONLY the JSON object. No preamble, no markdown fences."""
+
+SYSTEM_RELEASE = """You summarize software library release notes for developers.
+
+Return JSON with exactly four fields:
+- "headline": "<library> v<version>: <one-line theme>" (under 12 words).
+- "body": 40-80 words. Lead with breaking changes if any. Then list up to 3 notable new features. Mention deprecations.
+- "breaking_changes": a JSON array of strings (empty array if none).
+- "migration_required": boolean — true if any breaking changes need code updates.
+
+Rules:
+- Be specific about what changed, not vague ("improved performance").
+- Output ONLY the JSON object. No preamble, no markdown fences."""
+
+SYSTEM_ESSAY = """You summarize long-form analysis for busy readers.
+
+Return JSON with exactly two fields:
+- "headline": The author's core thesis in one line (8-14 words).
+- "body": 100-180 words. Capture the argument arc: what claim is made, what evidence supports it, what conclusion is drawn. Preserve the author's key insight — don't flatten to a topic label.
+
+Rules:
+- First sentence should state the thesis, not describe the article.
+- No emojis, no filler.
+- Output ONLY the JSON object. No preamble, no markdown fences."""
+
+_SYSTEM_PROMPTS = {
+    "news": SYSTEM_NEWS,
+    "paper": SYSTEM_PAPER,
+    "model": SYSTEM_MODEL,
+    "release": SYSTEM_RELEASE,
+    "essay": SYSTEM_ESSAY,
+}
+
+_MAX_BODY_WORDS = {
+    "news": 40,
+    "paper": 70,
+    "model": 50,
+    "release": 80,
+    "essay": 180,
+}
+
 
 @dataclass
 class Summary:
@@ -59,6 +119,9 @@ class Summary:
     source: str
     category: str
     date: str
+    content_type: str = "news"
+    authors: list[str] | None = None
+    extra: dict | None = None
 
 
 def _extract_json(text: str) -> dict:
@@ -78,21 +141,35 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
         return Summary(**cached_data)
     _metrics["cache_misses"] += 1
 
-    content = (article.content or "")[: cfg.max_article_chars]
-    prompt = f"Title: {article.title}\n\nArticle:\n{content}"
+    ct = article.content_type or "news"
+    max_chars = cfg.max_article_chars
+    if ct == "essay":
+        max_chars = min(max_chars * 2, 12000)
 
-    system_prompt = SYSTEM
+    content = (article.content or "")[:max_chars]
+
+    if ct == "paper" and article.authors:
+        prompt = f"Title: {article.title}\nAuthors: {', '.join(article.authors)}\n\nAbstract:\n{content}"
+    elif ct == "release" and article.extra:
+        lib_name = article.extra.get("library", article.title)
+        prompt = f"Library: {lib_name}\n\nRelease Notes:\n{content}"
+    else:
+        prompt = f"Title: {article.title}\n\nArticle:\n{content}"
+
+    system_prompt = _SYSTEM_PROMPTS.get(ct, SYSTEM_NEWS)
     if tone and tone.lower() != "standard":
         system_prompt += f"\n- Tone adjustment: Adopt the following tone in your body perfectly: {tone}."
     if jargon_busting:
         system_prompt += "\n- Jargon busting: Identify any complex finance, technical, or policy jargon and wrap them cleanly in HTML <abbr title='simple definition'>term</abbr> tags."
+
+    max_tokens = 400 if ct != "essay" else 800
 
     response = None
     for attempt in range(4):
         try:
             response = _client.messages.create(
                 model=secrets.summary_model,
-                max_tokens=400,
+                max_tokens=max_tokens,
                 system=system_prompt,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -121,20 +198,31 @@ def summarize(article: Article, cfg: Summarizer, tone: str = "Standard", jargon_
         completion=text,
         input_tokens=in_tok,
         output_tokens=out_tok,
-        metadata={"tone": tone_str, "jargon_busting": jargon_busting, "url": article.url},
+        metadata={"tone": tone_str, "jargon_busting": jargon_busting, "url": article.url, "content_type": ct},
     )
 
     data = _extract_json(text)
 
+    summary_extra = {}
+    if ct == "release":
+        bc = data.get("breaking_changes", [])
+        summary_extra["breaking_changes"] = bc if isinstance(bc, list) else []
+        summary_extra["migration_required"] = bool(data.get("migration_required", False))
+
+    max_words = _MAX_BODY_WORDS.get(ct, 40)
+
     summary = Summary(
         headline=str(data.get("headline", "")).strip().rstrip(".,;:"),
-        body=_trim_body(str(data.get("body", "")).strip()),
+        body=_trim_body(str(data.get("body", "")).strip(), max_words=max_words),
         url=article.url,
         source=article.source,
         category=article.category,
         date=article.published or "",
+        content_type=ct,
+        authors=article.authors,
+        extra=summary_extra or None,
     )
-    
+
     set_cached_summary(article.url, tone_str, jargon_busting, dataclasses.asdict(summary))
     return summary
 

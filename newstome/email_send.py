@@ -32,8 +32,41 @@ CATEGORY_LABELS = {
     "global_policy": "🌐 Global Policy",
     "global_space": "🌌 Space",
     "global_other": "🌍 Global",
+    "ai_models": "🤖 Models",
+    "ai_papers": "📄 Papers",
+    "ai_libraries": "📦 Library Updates",
+    "ai_tools": "🔥 Trending Tools",
+    "ai_essays": "🧠 Long Reads",
+    "ai_products": "🚀 Products",
+    "ai_safety": "🛡 Safety & Policy",
     "other": "📰 News",
 }
+
+SECTION_HEADERS = {
+    "news": None,
+    "paper": "📄 Papers",
+    "model": "🤖 Models",
+    "release": "📦 Library Updates",
+    "essay": "🧠 Long Reads",
+}
+
+
+def _group_by_content_type(summaries: list[Summary]) -> list[tuple[str | None, list[Summary]]]:
+    """Group summaries into sections by content_type, preserving order."""
+    section_order = ["news", "model", "paper", "release", "essay"]
+    buckets: dict[str, list[Summary]] = {ct: [] for ct in section_order}
+    for s in summaries:
+        ct = getattr(s, "content_type", "news") or "news"
+        if ct not in buckets:
+            buckets["news"].append(s)
+        else:
+            buckets[ct].append(s)
+
+    sections: list[tuple[str | None, list[Summary]]] = []
+    for ct in section_order:
+        if buckets[ct]:
+            sections.append((SECTION_HEADERS.get(ct), buckets[ct]))
+    return sections
 
 
 def _fmt_date(date_str: str) -> str:
@@ -68,23 +101,40 @@ def _html_body(summaries: list[Summary], title: str, email: str | None = None) -
             f'<a href="{unsub_link}" style="color:#888;text-decoration:underline;">Unsubscribe</a>'
             "</div>"
         )
-    for s in summaries:
-        label = CATEGORY_LABELS.get(s.category, s.category)
-        date_chip = _fmt_date(s.date)
-        
-        # Tracking link
-        link = s.url
-        if email:
-            import urllib.parse
-            q = urllib.parse.urlencode({"url": s.url, "cat": s.category, "u": email})
-            link = f"{base_url}/r?{q}"
+    sections = _group_by_content_type(summaries)
+    for section_header, section_summaries in sections:
+        if section_header:
+            items += f"""
+        <tr>
+          <td style="padding:20px 0 8px 0;">
+            <div style="font-size:13px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #eee;padding-bottom:6px;">{section_header}</div>
+          </td>
+        </tr>"""
+        for s in section_summaries:
+            label = CATEGORY_LABELS.get(s.category, s.category)
+            date_chip = _fmt_date(s.date)
 
-        items += f"""
+            link = s.url
+            if email:
+                import urllib.parse
+                q = urllib.parse.urlencode({"url": s.url, "cat": s.category, "u": email})
+                link = f"{base_url}/r?{q}"
+
+            author_line = ""
+            if s.authors:
+                author_line = f" &nbsp;·&nbsp; {', '.join(s.authors[:3])}"
+
+            breaking_html = ""
+            if s.extra and s.extra.get("breaking_changes"):
+                bc_items = s.extra["breaking_changes"]
+                breaking_html = '<div style="font-size:12px;color:#d32f2f;margin-bottom:6px;">⚠ Breaking: ' + "; ".join(bc_items[:3]) + "</div>"
+
+            items += f"""
         <tr>
           <td style="padding:16px 0;border-bottom:1px solid #eee;">
-            <div style="font-size:11px;color:#888;margin-bottom:4px;">{label} &nbsp;·&nbsp; {s.source} &nbsp;·&nbsp; {date_chip}</div>
+            <div style="font-size:11px;color:#888;margin-bottom:4px;">{label} &nbsp;·&nbsp; {s.source}{author_line} &nbsp;·&nbsp; {date_chip}</div>
             <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px;line-height:1.3">{s.headline}</div>
-            <div style="font-size:14px;color:#444;line-height:1.6;margin-bottom:8px">{s.body}</div>
+            {breaking_html}<div style="font-size:14px;color:#444;line-height:1.6;margin-bottom:8px">{s.body}</div>
             <a href="{link}" style="font-size:12px;color:#1b4aef;text-decoration:none;">Read more →</a>
           </td>
         </tr>"""

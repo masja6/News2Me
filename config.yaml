@@ -59,6 +59,13 @@ categories:
   - global_policy
   - global_space
   - global_other
+  - ai_models
+  - ai_papers
+  - ai_libraries
+  - ai_tools
+  - ai_essays
+  - ai_products
+  - ai_safety
   - other
 
 ranking:
@@ -86,3 +93,12 @@ delivery:
 
 telegram:
   digest_title: "Morning Digest"
+
+ai_sources:
+  enabled: true
+  arxiv: true
+  blogs: true
+  pypi: true
+  huggingface: true
+  github_trending: true
+  github_releases: true

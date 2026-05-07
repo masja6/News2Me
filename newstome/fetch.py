@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import feedparser
 import httpx
@@ -22,6 +22,11 @@ class Article:
     source: str
     category: str
     trust: float
+    content_type: str = "news"
+    authors: list[str] | None = None
+    external_id: str | None = None
+    metrics: dict | None = None
+    extra: dict | None = None
 
 
 def fetch_all(feeds: list[Feed], per_feed_limit: int = _PER_FEED_LIMIT) -> list[Article]:

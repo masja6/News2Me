@@ -330,6 +330,25 @@ def set_cached_summary(url: str, tone: str, jargon_busting: bool, summary_data: 
         cache[cache_key] = summary_data
         cache_path.write_text(json.dumps(cache, indent=2))
 
+def get_tracked_ids(user: dict) -> set[str]:
+    """Build a set of external_id patterns from a subscriber's trackers.
+
+    These IDs are matched against Article.external_id during ranking so that
+    tracked items bypass diversity caps.
+    """
+    trackers = user.get("trackers", {})
+    ids: set[str] = set()
+    for lib in trackers.get("libraries", []):
+        ids.add(lib)
+    for repo in trackers.get("repos", []):
+        ids.add(repo)
+    for author in trackers.get("authors", []):
+        ids.add(author)
+    for org in trackers.get("orgs", []):
+        ids.add(org)
+    return ids
+
+
 def get_cache_stats() -> dict:
     """Returns total items in cache and estimated savings."""
     db = _get_db()

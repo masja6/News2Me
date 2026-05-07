@@ -27,15 +27,22 @@ def _extract_json_array(text: str) -> list:
     return json.loads(t)
 
 
+_PREASSIGNED_CONTENT_TYPES = {"paper", "model", "release", "essay"}
+
+
 def classify_articles(articles: list[Article], categories: list[str]) -> list[Article]:
     if not articles:
         return articles
 
-    lines = [f"{i}. {a.title}" for i, a in enumerate(articles)]
+    needs_classification = [a for a in articles if a.content_type not in _PREASSIGNED_CONTENT_TYPES]
+    if not needs_classification:
+        return articles
+
+    lines = [f"{i}. {a.title}" for i, a in enumerate(needs_classification)]
     user = f"Taxonomy: {', '.join(categories)}\n\nArticles:\n" + "\n".join(lines)
 
     try:
-        with observe.span("classify", input=user, metadata={"article_count": len(articles)}):
+        with observe.span("classify", input=user, metadata={"article_count": len(needs_classification)}):
             response = _client.messages.create(
                 model=secrets.classify_model,
                 max_tokens=2000,
@@ -55,7 +62,7 @@ def classify_articles(articles: list[Article], categories: list[str]) -> list[Ar
         completion=text,
         input_tokens=getattr(usage, "input_tokens", 0) or 0 if usage else 0,
         output_tokens=getattr(usage, "output_tokens", 0) or 0 if usage else 0,
-        metadata={"article_count": len(articles)},
+        metadata={"article_count": len(needs_classification)},
     )
 
     try:
@@ -65,7 +72,7 @@ def classify_articles(articles: list[Article], categories: list[str]) -> list[Ar
         print(f"  classify parse failed ({e}); falling back")
         return articles
 
-    for i, a in enumerate(articles):
+    for i, a in enumerate(needs_classification):
         cat = mapping.get(i)
         if cat and cat in categories:
             a.category = cat

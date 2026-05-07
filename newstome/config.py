@@ -74,6 +74,16 @@ class TelegramCfg(BaseModel):
     digest_title: str = "Morning Digest"
 
 
+class AiSources(BaseModel):
+    enabled: bool = True
+    arxiv: bool = True
+    blogs: bool = True
+    pypi: bool = True
+    huggingface: bool = True
+    github_trending: bool = True
+    github_releases: bool = True
+
+
 class AppConfig(BaseModel):
     feeds: list[Feed]
     categories: list[str] = []
@@ -82,6 +92,7 @@ class AppConfig(BaseModel):
     qc: Qc = Qc()
     delivery: Delivery = Delivery()
     telegram: TelegramCfg = TelegramCfg()
+    ai_sources: AiSources = AiSources()
 
 
 def load_config() -> AppConfig:
