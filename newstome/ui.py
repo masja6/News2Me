@@ -357,17 +357,69 @@ async def cron_deliver(request: Request, background: BackgroundTasks):
 
 @app.post("/admin/run")
 async def admin_run(background: BackgroundTasks, _: str = Depends(require_admin)):
+    """Preview-only: generates a digest and saves it for admin viewing.
+    Does NOT send to any subscribers."""
     global _running
     if _running:
         return RedirectResponse("/admin", status_code=303)
     _running = True
-    background.add_task(_do_run)
-    return RedirectResponse("/admin", status_code=303)
+    background.add_task(_do_preview_run)
+    return RedirectResponse("/admin?ran=1", status_code=303)
 
 
-def _do_run() -> None:
+def _do_preview_run() -> None:
+    """Fetch → classify → rank → summarize → save. No delivery."""
+    global _running
+    try:
+        ranked = prepare_clusters(verbose=True)
+        if not ranked:
+            print("Admin run: no stories found.")
+            return
+        cfg = load_config()
+        summaries, report = build_user_digest(
+            ranked, {"max_items": cfg.ranking.max_items}, verbose=True
+        )
+        if summaries:
+            from dataclasses import asdict
+            date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            from .db import save_digest_archive
+            save_digest_archive(
+                date_key,
+                [asdict(s) for s in summaries],
+                title=cfg.telegram.digest_title,
+            )
+            print(f"Admin run: {len(summaries)} stories generated and archived for {date_key}.")
+    except Exception as e:
+        print(f"Admin run failed: {e}")
+    finally:
+        _running = False
+
+
+@app.post("/admin/deliver")
+async def admin_deliver(background: BackgroundTasks, _: str = Depends(require_admin)):
+    """Actually send the digest to all subscribers. Separate from preview."""
+    global _running
+    if _running:
+        return RedirectResponse("/admin", status_code=303)
+    _running = True
+    background.add_task(_do_deliver)
+    return RedirectResponse("/admin?delivered=1", status_code=303)
+
+
+def _do_deliver() -> None:
     global _running
     try:
         run_delivery_cycle(verbose=True)
     finally:
         _running = False
+
+
+@app.post("/admin/backfill")
+async def admin_backfill(background: BackgroundTasks, _: str = Depends(require_admin)):
+    """Generate a digest for today and archive it without sending."""
+    global _running
+    if _running:
+        return RedirectResponse("/admin", status_code=303)
+    _running = True
+    background.add_task(_do_preview_run)
+    return RedirectResponse("/admin?backfilled=1", status_code=303)

@@ -239,11 +239,23 @@ form.run-form { margin: 0; }
   <span class="header-status">
     {% if last_generated %}Last run: {{ last_generated }}{% else %}No runs yet{% endif %}
   </span>
-  <form class="run-form" action="/admin/run" method="post">
-    <button class="btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
-      {{ '⟳ Running…' if running else '▶ Run Now' }}
-    </button>
-  </form>
+  <div style="display:flex;gap:8px;">
+    <form class="run-form" action="/admin/run" method="post">
+      <button class="btn-run" type="submit" id="run-btn" {{ 'disabled' if running }}>
+        {{ '⟳ Running…' if running else '▶ Preview Digest' }}
+      </button>
+    </form>
+    <form class="run-form" action="/admin/deliver" method="post">
+      <button class="btn-run" type="submit" {{ 'disabled' if running }} style="background:#059669;">
+        📨 Send to Subscribers
+      </button>
+    </form>
+    <form class="run-form" action="/admin/backfill" method="post">
+      <button class="btn-run" type="submit" {{ 'disabled' if running }} style="background:#7c3aed;">
+        📦 Backfill Archive
+      </button>
+    </form>
+  </div>
 </div>
 
 <!-- Navigation -->
@@ -263,12 +275,12 @@ form.run-form { margin: 0; }
     {% if running %}
     <div class="status-bar running">
       <div class="status-dot running"></div>
-      <span>Pipeline running — generating personalized digests now.</span>
+      <span>Pipeline running — generating digest now.</span>
     </div>
     {% elif last_generated %}
     <div class="status-bar">
       <div class="status-dot"></div>
-      <span>All good. Last digest sent on <b>{{ last_generated }}</b> · {{ story_count }} stories</span>
+      <span>All good. Last digest generated on <b>{{ last_generated }}</b> · {{ story_count }} stories</span>
     </div>
     {% else %}
     <div class="status-bar warn">
@@ -489,14 +501,23 @@ if (saved) {
   if (t) t.click();
 }
 
-// Toast on save
+// Toast notifications
 const p = new URLSearchParams(location.search);
-if (p.get('saved')) {
-  const t = document.getElementById('toast');
-  t.textContent = '✓ Configuration saved';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-  history.replaceState({}, '', '/admin');
+const toastMap = {
+  saved: '✓ Configuration saved',
+  ran: '▶ Digest preview generating — refresh in a moment to see results',
+  delivered: '📨 Digest sending to subscribers…',
+  backfilled: '📦 Backfill running — digest will be archived shortly',
+};
+for (const [key, msg] of Object.entries(toastMap)) {
+  if (p.get(key)) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+    history.replaceState({}, '', '/admin');
+    break;
+  }
 }
 </script>
 </body>
