@@ -156,6 +156,22 @@ body {
     <p class="hero-sub">Your digest lands at <b>7 AM IST</b> every day at {{ user.email }}</p>
   </div>
 
+  {% if latest %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <div class="card-title">📰 Latest Digest — {{ latest.date }}</div>
+      <a href="/d/{{ latest.date }}" class="btn btn-ghost" style="padding: 7px 16px; font-size: 13px;">View full →</a>
+    </div>
+    {% for s in latest.summaries[:3] %}
+      <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">{{ s.category }}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;">{{ s.headline }}</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.5;">{{ s.body }}</div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="grid-2">
     <!-- Preferences -->
     <div class="card">
