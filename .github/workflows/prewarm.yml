@@ -1,0 +1,42 @@
+name: Pre-warm Render before delivery
+
+# ─────────────────────────────────────────────────────────────────────
+# CONFIGURE DELIVERY TIME HERE
+# ─────────────────────────────────────────────────────────────────────
+# Set the cron to fire ~5 minutes BEFORE your desired delivery hour
+# so Render stays warm through the actual delivery trigger.
+#
+# Cron format (UTC):  'minute hour * * *'
+#
+# Examples:
+#   '25 1 * * *'   → 01:25 UTC = 06:55 IST (delivery at 02:00 UTC = 7 AM IST, send_hour=7)
+#   '55 10 * * *'  → 10:55 UTC = 16:25 IST (delivery at 11:00 UTC = 4:30 PM IST, send_hour=16) ← CURRENT
+#   '55 13 * * *'  → 13:55 UTC = 19:25 IST (delivery at 14:00 UTC = 7:30 PM IST, send_hour=19)
+#
+# After changing, also update each user's send_hour in DB to match
+# the IST hour at which the delivery cron fires (see comment per row above).
+# ─────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    - cron: '55 10 * * *'
+  workflow_dispatch:
+
+jobs:
+  prewarm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render and confirm ready
+        run: |
+          echo "Pre-warming Render service..."
+          for i in $(seq 1 18); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${{ secrets.APP_URL }}/" || echo "000")
+            echo "  Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "302" ]; then
+              echo "Service is warm and ready for delivery."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Pre-warm failed after 3 minutes. Delivery cron may still recover."
+          exit 1
