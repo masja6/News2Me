@@ -12,14 +12,27 @@ jobs:
   deliver:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake up Render (free tier cold start)
+      - name: Wake Render and wait for ready
         run: |
-          curl -s -o /dev/null --max-time 60 "${{ secrets.APP_URL }}/" || true
+          echo "Waking up Render service..."
+          for i in $(seq 1 12); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${{ secrets.APP_URL }}/" || echo "000")
+            echo "  Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "302" ]; then
+              echo "Service is up!"
+              break
+            fi
+            if [ "$i" = "12" ]; then
+              echo "Service did not wake after 2 minutes"
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: Trigger hourly delivery
         run: |
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
-            --max-time 90 \
+            --max-time 120 \
             -X POST "${{ secrets.APP_URL }}/cron/deliver" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}")
           echo "Full response: $RESPONSE"
