@@ -351,7 +351,7 @@ async def cron_deliver(request: Request, background: BackgroundTasks):
     if _running:
         return {"status": "already_running"}
     _running = True
-    background.add_task(_do_run)
+    background.add_task(_do_deliver)
     return {"status": "started"}
 
 
