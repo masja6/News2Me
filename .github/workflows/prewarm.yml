@@ -1,0 +1,29 @@
+name: Pre-warm Render before IST delivery
+
+on:
+  schedule:
+    # Fire at 01:25 UTC = 06:55 IST, 5 min before the 02:00 UTC trigger
+    # that delivers to IST users with send_hour=7. Render free tier takes
+    # 30-60s to cold-start, so warming early prevents the delivery
+    # cron from racing the boot.
+    - cron: '25 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  prewarm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render and confirm ready
+        run: |
+          echo "Pre-warming Render service for IST 7 AM delivery..."
+          for i in $(seq 1 18); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${{ secrets.APP_URL }}/" || echo "000")
+            echo "  Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "302" ]; then
+              echo "Service is warm and ready for delivery."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Pre-warm failed after 3 minutes. Delivery cron may still recover."
+          exit 1
